@@ -12,9 +12,12 @@ from werkzeug.utils import secure_filename
 from database import get_db_connection, init_db
 
 app = Flask(__name__)
-app.secret_key = "home_healthcare_secret_key_2026_super_secure"
+app.secret_key = os.environ.get("SECRET_KEY", "local-development-secret-key")
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
+default_upload_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
+if os.environ.get("VERCEL"):
+    default_upload_folder = "/tmp/uploads"
+UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", default_upload_folder)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload

@@ -13,10 +13,10 @@ import os
 import json
 from datetime import datetime, timedelta
 
-DB_PATH = os.environ.get(
-    "DATABASE_PATH",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "healthcare.db"),
-)
+default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "healthcare.db")
+if os.environ.get("VERCEL"):
+    default_db_path = "/tmp/healthcare.db"
+DB_PATH = os.environ.get("DATABASE_PATH", default_db_path)
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
