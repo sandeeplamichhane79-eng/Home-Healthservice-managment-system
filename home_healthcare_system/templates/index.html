@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>National Home Healthcare Management System</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  
+  <!-- Core & Animation Stylesheets -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/animations.css">
+  <link rel="stylesheet" href="/static/css/doctor_animation.css">
+</head>
+<body>
+
+  <!-- Top Quick Demo Role Switcher Bar -->
+  <aside class="demo-role-bar">
+    <div class="demo-title">
+      <i class="fa-solid fa-arrows-spin animate-spin" style="animation-duration: 4s;"></i>
+      <span>QUICK ROLE ACCESS (1-CLICK TEST):</span>
+    </div>
+    <div class="role-chips">
+      <button class="role-chip-btn active" data-role="patient" onclick="switchDemoRole('patient')" title="Switch to Patient John Doe">
+        <i class="fa-solid fa-user"></i> Patient (John Doe)
+      </button>
+      <button class="role-chip-btn" data-role="admin" onclick="switchDemoRole('admin')" title="Switch to Admin Dr. Vance">
+        <i class="fa-solid fa-shield-halved"></i> Admin (Dr. Vance)
+      </button>
+      <button class="role-chip-btn" data-role="nurse" onclick="switchDemoRole('nurse')" title="Switch to Nurse Sarah">
+        <i class="fa-solid fa-user-nurse"></i> Nurse (Sarah, RN)
+      </button>
+      <button class="role-chip-btn" data-role="doctor" onclick="switchDemoRole('doctor')" title="Switch to Doctor Dr. Wilson">
+        <i class="fa-solid fa-user-doctor"></i> Doctor (Dr. Wilson)
+      </button>
+      <button class="role-chip-btn" data-role="therapist" onclick="switchDemoRole('therapist')" title="Switch to Therapist Elena">
+        <i class="fa-solid fa-person-walking"></i> Therapist (Elena)
+      </button>
+      <button class="role-chip-btn" data-role="login" onclick="openLoginModal()" style="background:#0284c7; color:white; border-color:#38bdf8;">
+        <i class="fa-solid fa-key"></i> ID/Password Login
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Navbar with National Emblem Logo -->
+  <header class="navbar">
+    <div class="container nav-wrapper">
+      <a href="#" class="brand-logo" onclick="switchTab('services')" style="text-decoration:none;">
+        <img src="/static/images/nepal_emblem_logo.png" alt="National Emblem Logo" class="emblem-logo">
+        <div class="gov-branding-text">
+          <span class="gov-title-np">नेपाल सरकार | स्वास्थ्य तथा जनसङ्ख्या मन्त्रालय</span>
+          <span class="gov-title-en">Home Healthcare System</span>
+          <span class="gov-subtitle"><i class="fa-solid fa-circle-check"></i> Certified Bedside Clinical Care</span>
+        </div>
+      </a>
+
+      <nav class="nav-links">
+        <button class="nav-btn active" id="navBtnServices" data-tab="services" onclick="switchTab('services')">
+          <i class="fa-solid fa-hand-holding-medical"></i> Services Catalog
+        </button>
+        <button class="nav-btn" id="navBtnRecords" data-tab="records" onclick="switchTab('records')">
+          <i class="fa-solid fa-folder-medical"></i> My Health Vault & Vitals
+        </button>
+        <button class="nav-btn" id="navBtnProfessional" data-tab="professional" onclick="switchTab('professional')">
+          <i class="fa-solid fa-stethoscope"></i> Clinician Visit Console
+        </button>
+        <button class="nav-btn" id="navBtnAdmin" data-tab="admin" onclick="switchTab('admin')">
+          <i class="fa-solid fa-chart-line"></i> Admin Dispatch & Resolution
+        </button>
+      </nav>
+
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <div class="user-badge-menu" id="userBadgeSection" onclick="openLoginModal()" style="cursor:pointer;" title="Click to view or switch user credentials">
+          <img id="headerUserAvatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" alt="Avatar" class="user-avatar-mini">
+          <div class="user-info-text">
+            <span id="headerUserName" class="user-info-name">John Doe</span>
+            <span id="headerUserRole" class="user-info-role">PATIENT</span>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="openLoginModal()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Sign In with ID and Password">
+          <i class="fa-solid fa-right-to-bracket"></i> Login
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="logoutUser()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Logout">
+          <i class="fa-solid fa-power-off"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 9-Step Interactive Workflow Visualizer Stepper -->
+  <section class="workflow-section">
+    <div class="container">
+      <div class="workflow-header">
+        <h3>
+          <i class="fa-solid fa-diagram-project" style="color:var(--primary);"></i>
+          Home Healthcare Workflow Lifecycle (9 Steps)
+        </h3>
+        <span style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Click any step node to jump into action</span>
+      </div>
+
+      <div class="workflow-stepper-wrapper">
+        <div class="workflow-stepper">
+          <div class="step-connector">
+            <div id="stepProgressBar" class="step-connector-progress" style="width: 25%;"></div>
+          </div>
+
+          <!-- Step 1 -->
+          <div class="step-node completed" data-step="1" onclick="onStepperClick(1)" title="Step 1: Patient Registration & Login">
+            <div class="step-circle"><i class="fa-solid fa-id-card-clip"></i></div>
+            <span class="step-label">1. Reg & Login</span>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="step-node active" data-step="2" onclick="onStepperClick(2)" title="Step 2: Select Healthcare Service">
+            <div class="step-circle"><i class="fa-solid fa-clipboard-list"></i></div>
+            <span class="step-label">2. Select Service</span>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="step-node" data-step="3" onclick="onStepperClick(3)" title="Step 3: Book Appointment & Upload Documents">
+            <div class="step-circle"><i class="fa-solid fa-calendar-plus"></i></div>
+            <span class="step-label">3. Book & Docs</span>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="step-node" data-step="4" onclick="onStepperClick(4)" title="Step 4: Admin Assigns Healthcare Professional">
+            <div class="step-circle"><i class="fa-solid fa-user-doctor"></i></div>
+            <span class="step-label">4. Admin Assign</span>
+          </div>
+
+          <!-- Step 5 -->
+          <div class="step-node" data-step="5" onclick="onStepperClick(5)" title="Step 5: Home Visit & Service Provided">
+            <div class="step-circle"><i class="fa-solid fa-house-chimney-medical"></i></div>
+            <span class="step-label">5. Home Visit</span>
+          </div>
+
+          <!-- Step 6 -->
+          <div class="step-node" data-step="6" onclick="onStepperClick(6)" title="Step 6: Update Vitals, Records & Prescriptions">
+            <div class="step-circle"><i class="fa-solid fa-file-waveform"></i></div>
+            <span class="step-label">6. Records & Rx</span>
+          </div>
+
+          <!-- Step 7 -->
+          <div class="step-node" data-step="7" onclick="onStepperClick(7)" title="Step 7: Payment (Online Card, UPI or Cash)">
+            <div class="step-circle"><i class="fa-solid fa-wallet"></i></div>
+            <span class="step-label">7. Payment</span>
+          </div>
+
+          <!-- Step 8 -->
+          <div class="step-node" data-step="8" onclick="onStepperClick(8)" title="Step 8: View Records, Reports & History">
+            <div class="step-circle"><i class="fa-solid fa-file-medical"></i></div>
+            <span class="step-label">8. View Records</span>
+          </div>
+
+          <!-- Step 9 -->
+          <div class="step-node" data-step="9" onclick="onStepperClick(9)" title="Step 9: Feedback, Rating & Issue Resolution">
+            <div class="step-circle"><i class="fa-solid fa-star"></i></div>
+            <span class="step-label">9. Feedback & Help</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main App Body -->
+  <main class="container" style="flex:1; padding-top:1.5rem;">
+    <!-- Active Role Header Banner -->
+    <div id="roleBanner"></div>
+
+    <!-- Hero Banner with Doctor-Patient Checkup Animation Scene (Patient View) -->
+    <section id="heroSection" class="hero-banner">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <h1>National Bedside <span>Healthcare At Home</span></h1>
+          <p>
+            Book registered nurses, general physicians, physical therapists, and diagnostic sample phlebotomists directly to your doorstep. Complete with real-time tracking, digital prescriptions, itemized billing, and instant dispute resolution.
+          </p>
+
+          <!-- Live Hospital Telemetry Vitals Bar -->
+          <div class="hospital-vitals-ticker">
+            <div class="vital-metric">
+              <span class="live-indicator"></span>
+              <span style="color:#94a3b8;">MONITOR:</span>
+            </div>
+            <div class="vital-metric">
+              <i class="fa-solid fa-heart-pulse animate-heartbeat" style="color:#ef4444;"></i>
+              <span>PULSE:</span> <span class="metric-val" style="color:#34d399;">72 BPM</span>
+            </div>
+            <div class="vital-metric">
+              <i class="fa-solid fa-lungs" style="color:#38bdf8;"></i>
+              <span>SpO2:</span> <span class="metric-val" style="color:#38bdf8;">99%</span>
+            </div>
+            <div class="vital-metric">
+              <i class="fa-solid fa-gauge-high" style="color:#fbbf24;"></i>
+              <span>BP:</span> <span class="metric-val" style="color:#fbbf24;">120/78</span>
+            </div>
+          </div>
+
+          <div class="hero-actions" style="margin-top:1.5rem;">
+            <button class="btn btn-primary btn-lg" onclick="onStepperClick(3)">
+              <i class="fa-solid fa-calendar-check"></i> Book Home Visit Now
+            </button>
+            <button class="btn btn-outline btn-lg" onclick="switchTab('records')">
+              <i class="fa-solid fa-folder-open"></i> View My Health Records
+            </button>
+          </div>
+        </div>
+
+        <!-- ========================================================
+             ANIMATED DOCTOR EXAMINING PATIENT STAGE SHOWCASE
+             ======================================================== -->
+        <div class="doctor-checkup-stage">
+          <!-- Floating Status Badges -->
+          <div class="checkup-badge-floating checkup-badge-top">
+            <span class="live-indicator"></span>
+            <i class="fa-solid fa-stethoscope" style="color:#38bdf8;"></i>
+            <span>Doctor Bedside Checkup</span>
+          </div>
+          
+          <div class="checkup-badge-floating checkup-badge-bottom">
+            <i class="fa-solid fa-heart-pulse animate-heartbeat" style="color:#ef4444;"></i>
+            <span>Auscultation: Heart Normal (72 bpm)</span>
+          </div>
+
+          <!-- SVG Vector Animation Scene -->
+          <svg viewBox="0 0 420 300" width="100%" height="260" xmlns="http://www.w3.org/2000/svg" style="display:block; margin:0 auto;">
+            <defs>
+              <linearGradient id="bedGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="100%" stop-color="#0369a1"/>
+              </linearGradient>
+              <linearGradient id="docCoat" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="100%" stop-color="#e2e8f0"/>
+              </linearGradient>
+              <linearGradient id="screenGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#0f172a"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="patientSkin" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#fbcfe8"/>
+                <stop offset="100%" stop-color="#f472b6"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Background Bedside Cardiac Monitor Stand -->
+            <g transform="translate(330, 60)">
+              <!-- Stand pole -->
+              <rect x="26" y="90" width="8" height="110" fill="#475569" rx="3"/>
+              <rect x="10" y="195" width="40" height="8" fill="#334155" rx="4"/>
+              
+              <!-- Monitor Box -->
+              <rect x="0" y="0" width="65" height="95" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="2" class="anim-monitor-screen"/>
+              <rect x="5" y="6" width="55" height="83" rx="4" fill="url(#screenGrad)"/>
+              
+              <!-- Monitor Screen Contents -->
+              <text x="10" y="20" fill="#10b981" font-size="8" font-family="monospace" font-weight="bold">ECG 72</text>
+              <text x="10" y="30" fill="#38bdf8" font-size="7" font-family="monospace">SpO2 99%</text>
+              <text x="10" y="40" fill="#f59e0b" font-size="7" font-family="monospace">120/78</text>
+              
+              <!-- Pulsing ECG line on screen -->
+              <path d="M 8 60 L 18 60 L 22 50 L 26 72 L 30 45 L 34 60 L 52 60" fill="none" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" class="anim-ecg-trace"/>
+              <circle cx="52" cy="60" r="2" fill="#34d399"/>
+            </g>
+
+            <!-- Clinical Examination Bed / Chair -->
+            <g transform="translate(40, 150)">
+              <!-- Backrest inclined -->
+              <path d="M 20 20 L 70 80 L 180 80 L 190 100 L 20 100 Z" fill="#0f172a" opacity="0.4"/>
+              <!-- Cushion Bed -->
+              <path d="M 25 10 L 75 70 L 185 70" fill="none" stroke="url(#bedGrad)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="15" y="0" width="30" height="18" rx="8" fill="#e0f2fe"/>
+              <!-- Bed Legs -->
+              <rect x="50" y="78" width="8" height="60" fill="#64748b" rx="2"/>
+              <rect x="165" y="78" width="8" height="60" fill="#64748b" rx="2"/>
+            </g>
+
+            <!-- Patient Sitting on Bed -->
+            <g transform="translate(45, 40)">
+              <!-- Patient Legs & Lower Body -->
+              <path d="M 105 175 L 175 175 L 180 205" fill="none" stroke="#3b82f6" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+              <ellipse cx="180" cy="208" rx="7" ry="5" fill="#1e293b"/>
+
+              <!-- Patient Torso / Chest (Animated Breathing) -->
+              <g class="anim-patient-chest">
+                <!-- Shirt -->
+                <path d="M 82 110 L 112 110 L 118 175 L 75 175 Z" fill="#60a5fa" rx="6"/>
+                <!-- Neck -->
+                <rect x="91" y="96" width="12" height="18" fill="#fbcfe8" rx="3"/>
+                <!-- Arm resting -->
+                <path d="M 82 115 L 68 150 L 98 162" fill="none" stroke="#60a5fa" stroke-width="10" stroke-linecap="round"/>
+                <circle cx="100" cy="164" r="5" fill="#fbcfe8"/>
+                
+                <!-- Heartbeat Sound Rings Radiating from Chest where Doctor places Stethoscope -->
+                <circle cx="110" cy="132" r="6" fill="none" stroke="#34d399" class="anim-stetho-pulse"/>
+                <circle cx="110" cy="132" r="14" fill="none" stroke="#38bdf8" class="anim-stetho-pulse" style="animation-delay: 0.5s;"/>
+              </g>
+
+              <!-- Patient Head -->
+              <g transform="translate(85, 48)">
+                <!-- Hair -->
+                <path d="M 6 26 Q 12 5 26 12 Q 38 8 36 26 Z" fill="#475569"/>
+                <!-- Face -->
+                <circle cx="21" cy="30" r="14" fill="#fed7aa"/>
+                <!-- Smile -->
+                <path d="M 17 35 Q 21 39 25 35" fill="none" stroke="#ea580c" stroke-width="1.5" stroke-linecap="round"/>
+                <!-- Eye with Blink -->
+                <ellipse cx="23" cy="28" rx="2" ry="2" fill="#1e293b" class="anim-patient-blink"/>
+              </g>
+            </g>
+
+            <!-- Doctor Standing Examining Patient -->
+            <g transform="translate(195, 20)">
+              <!-- Doctor Lower Body / Legs -->
+              <path d="M 50 190 L 45 270" stroke="#1e293b" stroke-width="14" stroke-linecap="round"/>
+              <path d="M 68 190 L 72 270" stroke="#1e293b" stroke-width="14" stroke-linecap="round"/>
+              <ellipse cx="40" cy="272" rx="10" ry="5" fill="#0f172a"/>
+              <ellipse cx="78" cy="272" rx="10" ry="5" fill="#0f172a"/>
+
+              <!-- Doctor Coat / Body -->
+              <path d="M 32 95 L 82 95 L 88 200 L 26 200 Z" fill="url(#docCoat)" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+              <!-- Shirt Collar & Tie -->
+              <path d="M 50 95 L 57 118 L 64 95 Z" fill="#0284c7"/>
+              <polygon points="54,118 60,118 62,145 57,152 52,145" fill="#dc2626"/>
+
+              <!-- Left Arm (Holding Clinical Clipboard) -->
+              <path d="M 76 102 L 95 135 L 75 155" fill="none" stroke="url(#docCoat)" stroke-width="12" stroke-linecap="round"/>
+              <!-- Medical Clipboard -->
+              <rect x="70" y="140" width="22" height="30" rx="3" fill="#cbd5e1" stroke="#334155" stroke-width="1.5" transform="rotate(-15, 80, 155)"/>
+              <rect x="74" y="146" width="14" height="2" fill="#059669" transform="rotate(-15, 80, 155)"/>
+              <rect x="74" y="152" width="14" height="2" fill="#475569" transform="rotate(-15, 80, 155)"/>
+              <rect x="74" y="158" width="10" height="2" fill="#475569" transform="rotate(-15, 80, 155)"/>
+
+              <!-- Doctor Head (Animated Nod) -->
+              <g class="anim-doc-head" transform="translate(42, 35)">
+                <!-- Hair -->
+                <path d="M 4 25 Q 12 2 30 10 Q 36 12 34 26 Z" fill="#334155"/>
+                <!-- Face -->
+                <circle cx="18" cy="30" r="14" fill="#fed7aa"/>
+                <!-- Glasses -->
+                <circle cx="14" cy="28" r="4.5" fill="none" stroke="#0284c7" stroke-width="1.2"/>
+                <circle cx="23" cy="28" r="4.5" fill="none" stroke="#0284c7" stroke-width="1.2"/>
+                <line x1="18.5" y1="28" x2="19.5" y2="28" stroke="#0284c7" stroke-width="1.2"/>
+                <!-- Smile -->
+                <path d="M 15 36 Q 19 39 22 36" fill="none" stroke="#c2410c" stroke-width="1.5" stroke-linecap="round"/>
+                
+                <!-- Stethoscope Headset around Doctor's ears -->
+                <path d="M 8 28 C 4 35, 12 58, 22 62 C 32 58, 38 35, 34 28" fill="none" stroke="#0f172a" stroke-width="2.5"/>
+              </g>
+
+              <!-- Doctor Right Arm with Stethoscope Chest Piece (Animated Auscultation Checking Patient) -->
+              <g class="anim-doc-arm">
+                <!-- Arm extending forward towards patient -->
+                <path d="M 38 102 C 10 120, -15 135, -40 148" fill="none" stroke="url(#docCoat)" stroke-width="13" stroke-linecap="round"/>
+                <!-- Hand holding chest piece -->
+                <circle cx="-42" cy="150" r="6" fill="#fed7aa"/>
+                
+                <!-- Stethoscope Rubber Tube & Chestpiece placed on patient's heart -->
+                <path d="M 12 118 C -5 130, -25 140, -42 152" fill="none" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- Metallic Stethoscope Diaphragm on chest -->
+                <circle cx="-44" cy="153" r="5" fill="#94a3b8" stroke="#059669" stroke-width="2"/>
+                <circle cx="-44" cy="153" r="2" fill="#34d399"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 1: Services Catalog & Booking (Steps 2 & 3) -->
+    <section id="view-services" class="dashboard-view active-view">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="section-title"><i class="fa-solid fa-heart-pulse" style="color:var(--primary);"></i> Available Home Healthcare Services</h2>
+          <p style="font-size:0.875rem; color:var(--text-muted);">Step 2: Choose a service below to book certified bedside medical assistance.</p>
+        </div>
+
+        <!-- Filter Chips -->
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="service-filter-btn role-chip-btn active" onclick="filterServices('All')">All Services</button>
+          <button class="service-filter-btn role-chip-btn" onclick="filterServices('Nursing')">Nursing Care</button>
+          <button class="service-filter-btn role-chip-btn" onclick="filterServices('Senior Care')">Elderly Care</button>
+          <button class="service-filter-btn role-chip-btn" onclick="filterServices('Rehabilitation')">Physiotherapy</button>
+          <button class="service-filter-btn role-chip-btn" onclick="filterServices('Diagnostic')">Lab Diagnostic</button>
+          <button class="service-filter-btn role-chip-btn" onclick="filterServices('Medical')">Doctor Visit</button>
+        </div>
+      </div>
+
+      <div id="servicesGridContainer" class="services-grid"></div>
+    </section>
+
+    <!-- VIEW 2: Patient Health Vault & Appointment History (Step 8) -->
+    <section id="view-records" class="dashboard-view">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="section-title"><i class="fa-solid fa-folder-medical" style="color:var(--secondary);"></i> Patient Medical Vault & Timeline</h2>
+          <p style="font-size:0.875rem; color:var(--text-muted);">Step 8: View historical vitals, digital prescriptions, invoices, and diagnostic reports.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="switchTab('services')">
+          <i class="fa-solid fa-plus"></i> Book New Service
+        </button>
+      </div>
+
+      <div class="card-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <h3 style="font-size:1.1rem; font-weight:800; color:var(--dark);">
+            <i class="fa-solid fa-chart-line" style="color:var(--primary);"></i> Vitals Health Trend Visualizer
+          </h3>
+          <div style="display:flex; gap:1rem; font-size:0.8rem; font-weight:700;">
+            <span style="color:#10b981;"><i class="fa-solid fa-circle"></i> Pulse (bpm)</span>
+            <span style="color:#2563eb;"><i class="fa-solid fa-circle"></i> Blood Sugar (mg/dL)</span>
+          </div>
+        </div>
+        <canvas id="vitalsChartCanvas" style="width:100%; height:200px;"></canvas>
+      </div>
+
+      <div class="section-title-bar" style="margin-top:2rem;">
+        <h3 style="font-size:1.2rem; font-weight:800; color:var(--dark);">
+          <i class="fa-solid fa-clock-rotate-left"></i> Appointment & Visit History
+        </h3>
+      </div>
+
+      <div id="patientAppointmentsHistoryList"></div>
+    </section>
+
+    <!-- VIEW 3: Healthcare Professional Console (Steps 5 & 6) -->
+    <section id="view-professional" class="dashboard-view">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="section-title"><i class="fa-solid fa-user-nurse" style="color:var(--primary);"></i> Assigned Home Visits Itinerary</h2>
+          <p style="font-size:0.875rem; color:var(--text-muted);">Step 5 & 6: Check-in to patient visits, record bedside vitals, and issue digital prescriptions.</p>
+        </div>
+      </div>
+      <div id="proAppointmentsContainer"></div>
+    </section>
+
+    <!-- VIEW 4: Admin Dispatch & Resolution Hub (Step 4 & Issue Management) -->
+    <section id="view-admin" class="dashboard-view">
+      <div class="section-title-bar">
+        <div>
+          <h2 class="section-title"><i class="fa-solid fa-chart-pie" style="color:var(--secondary);"></i> Admin Dispatch & Resolution Command</h2>
+          <p style="font-size:0.875rem; color:var(--text-muted);">Step 4: Match and assign verified healthcare professionals, track visits, and resolve patient complaints.</p>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+        <div class="card-panel" style="text-align:center;">
+          <div id="adminStatTotal" style="font-size:1.8rem; font-weight:800; color:var(--dark);">0</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Bookings</div>
+        </div>
+        <div class="card-panel" style="text-align:center;">
+          <div id="adminStatPending" style="font-size:1.8rem; font-weight:800; color:var(--warning);">0</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Pending Dispatch</div>
+        </div>
+        <div class="card-panel" style="text-align:center;">
+          <div id="adminStatCompleted" style="font-size:1.8rem; font-weight:800; color:var(--success);">0</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Completed Visits</div>
+        </div>
+        <div class="card-panel" style="text-align:center;">
+          <div id="adminStatRevenue" style="font-size:1.8rem; font-weight:800; color:var(--primary);">$0.00</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Revenue</div>
+        </div>
+        <div class="card-panel" style="text-align:center;">
+          <div id="adminStatIssues" style="font-size:1.8rem; font-weight:800; color:var(--danger);">0</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Open Issues</div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:1rem;">
+          <i class="fa-solid fa-table-list"></i> Live Appointment Requests & Assignments
+        </h3>
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Appt #</th>
+                <th>Patient</th>
+                <th>Service & Time</th>
+                <th>Address</th>
+                <th>Assigned Professional</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminAppointmentsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title-bar" style="margin-top:2rem;">
+        <h3 style="font-size:1.2rem; font-weight:800; color:var(--danger);">
+          <i class="fa-solid fa-headset"></i> Patient Issue Resolution & Dispute Center
+        </h3>
+      </div>
+      <div id="adminIssuesListContainer"></div>
+    </section>
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- 1. Dedicated Authentication / Login & Register Modal (Step 1) -->
+  <div id="authModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:540px;">
+      <div class="login-header-banner">
+        <img src="/static/images/nepal_emblem_logo.png" alt="Emblem" class="emblem-logo">
+        <h3 style="font-size:1.3rem; font-weight:800; margin:0;">National Healthcare Portal</h3>
+        <div style="font-size:0.8rem; color:#a7f3d0; margin-top:0.25rem;">Sign in to your dedicated Patient, Staff, or Admin portal</div>
+        <button class="modal-close-btn" onclick="closeModal('authModal')" style="position:absolute; top:12px; right:12px; color:white;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="login-tab-switch">
+        <button type="button" id="authTabLogin" class="login-tab-btn active" onclick="switchAuthTab('login')">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </button>
+        <button type="button" id="authTabRegister" class="login-tab-btn" onclick="switchAuthTab('register')">
+          <i class="fa-solid fa-user-plus"></i> New Patient Registration
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding:1.5rem;">
+        <div id="loginFormSection">
+          <form onsubmit="handleLoginSubmit(event)">
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address / Username *</label>
+              <input type="email" id="loginEmail" class="form-control" placeholder="Enter your registered email" value="patient@demo.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-lock"></i> Password *</label>
+              <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" value="demo123" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem;">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to My Portal
+            </button>
+          </form>
+
+          <div class="preset-credentials-box">
+            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.4rem;">
+              <i class="fa-solid fa-bolt"></i> Quick-Fill Credentials (Click to fill):
+            </div>
+            <div style="display:flex; flex-wrap:wrap;">
+              <span class="preset-chip" onclick="fillLoginCredentials('patient@demo.com', 'demo123')">
+                <i class="fa-solid fa-user"></i> Patient: patient@demo.com
+              </span>
+              <span class="preset-chip" onclick="fillLoginCredentials('admin@demo.com', 'admin123')">
+                <i class="fa-solid fa-shield-halved"></i> Admin: admin@demo.com
+              </span>
+              <span class="preset-chip" onclick="fillLoginCredentials('nurse.sarah@demo.com', 'nurse123')">
+                <i class="fa-solid fa-user-nurse"></i> Nurse: nurse.sarah@demo.com
+              </span>
+              <span class="preset-chip" onclick="fillLoginCredentials('dr.james@demo.com', 'doctor123')">
+                <i class="fa-solid fa-user-doctor"></i> Doctor: dr.james@demo.com
+              </span>
+              <span class="preset-chip" onclick="fillLoginCredentials('pt.elena@demo.com', 'therapist123')">
+                <i class="fa-solid fa-person-walking"></i> Therapist: pt.elena@demo.com
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div id="registerFormSection" style="display:none;">
+          <form onsubmit="handleRegisterSubmit(event)">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input type="text" id="regName" class="form-control" placeholder="e.g. Ramesh Sharma" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <input type="email" id="regEmail" class="form-control" placeholder="e.g. ramesh@example.com" required>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Password *</label>
+                <input type="password" id="regPassword" class="form-control" placeholder="Create password" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone Number *</label>
+                <input type="text" id="regPhone" class="form-control" placeholder="+977 98XXXXXXXX" required>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Age</label>
+                <input type="number" id="regAge" class="form-control" value="35">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select id="regGender" class="form-control">
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Blood Group</label>
+                <select id="regBloodGroup" class="form-control">
+                  <option value="O+">O+</option>
+                  <option value="A+">A+</option>
+                  <option value="B+">B+</option>
+                  <option value="AB+">AB+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Account Role</label>
+                <select id="regRole" class="form-control">
+                  <option value="patient">Patient</option>
+                  <option value="professional">Healthcare Professional</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Home Address</label>
+              <input type="text" id="regAddress" class="form-control" placeholder="Enter municipality, ward no., city">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+              <i class="fa-solid fa-user-check"></i> Register Account & Sign In
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Interactive Booking Modal (Step 3) -->
+  <div id="bookingModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title"><i id="bookingServiceIcon" class="fa-solid fa-stethoscope" style="color:var(--primary);"></i> Book Healthcare Appointment</h3>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Step 3: Provide health concerns and attach previous medical documents.</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('bookingModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="submitBookingRequest(event)">
+          <div style="background:var(--primary-light); border:1px solid #a7f3d0; border-radius:var(--radius-md); padding:1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:0.75rem; text-transform:uppercase; font-weight:700; color:var(--primary);">Selected Service</div>
+              <div id="bookingServiceTitle" style="font-size:1.1rem; font-weight:800; color:var(--dark);">Skilled Nursing Care</div>
+              <div style="font-size:0.8rem; color:var(--text-muted);"><i class="fa-regular fa-clock"></i> <span id="bookingServiceDuration">60 mins</span></div>
+            </div>
+            <div id="bookingServicePrice" style="font-size:1.4rem; font-weight:800; color:var(--primary);">$65.00</div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Preferred Date *</label>
+              <input type="date" id="bookingDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Preferred Time Slot *</label>
+              <select id="bookingTimeSlot" class="form-control" required>
+                <option value="09:00 AM - 10:00 AM">Morning (09:00 AM - 10:00 AM)</option>
+                <option value="11:30 AM - 12:30 PM">Mid-Day (11:30 AM - 12:30 PM)</option>
+                <option value="02:00 PM - 03:00 PM">Afternoon (02:00 PM - 03:00 PM)</option>
+                <option value="05:00 PM - 06:00 PM">Evening (05:00 PM - 06:00 PM)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+              <label class="form-label" style="margin-bottom:0;">Home Visit Address *</label>
+              <button type="button" class="btn btn-sm btn-outline" onclick="autoDetectLocation()" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
+                <i class="fa-solid fa-location-crosshairs" style="color:var(--primary);"></i> Auto-Detect GPS
+              </button>
+            </div>
+            <input type="text" id="bookingAddress" class="form-control" placeholder="Enter complete flat/house number and street" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Medical Symptoms & Care Requirements</label>
+            <textarea id="bookingSymptoms" class="form-control" rows="2" placeholder="e.g., Post-surgery knee dressing change, IV injection, blood pressure check..."></textarea>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Emergency Contact Name</label>
+              <input type="text" id="bookingEmergencyName" class="form-control" value="Mary Doe (Spouse)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emergency Contact Phone</label>
+              <input type="text" id="bookingEmergencyPhone" class="form-control" value="+1 (555) 234-9999">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Attach Previous Medical Documents / Prescription (Optional)</label>
+            <div id="bookingDropzone" class="dropzone-area">
+              <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+              <div style="font-weight:700; font-size:0.9rem;">Drag & drop past prescriptions or lab orders here</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">Supports PDF, PNG, JPG (Max 16MB)</div>
+              <input type="file" id="bookingFileInput" style="display:none;" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+            </div>
+            <div id="bookingUploadedFilesList" class="upload-file-list"></div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem;">
+            <i class="fa-solid fa-check"></i> Submit Appointment Request (Step 3 Complete)
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Admin Assign Professional Modal (Step 4) -->
+  <div id="adminAssignModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-user-plus" style="color:var(--primary);"></i> Assign Healthcare Professional</h3>
+        <button class="modal-close-btn" onclick="closeModal('adminAssignModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="submitStaffAssignment(event)">
+          <div class="form-group">
+            <label class="form-label">Select Verified Healthcare Provider</label>
+            <select id="assignStaffSelect" class="form-control" required></select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">
+            <i class="fa-solid fa-check-double"></i> Confirm Staff Assignment & Notify Patient
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Healthcare Professional Visit & Records Console (Step 6) -->
+  <div id="completeRecordsModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:800px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title"><i class="fa-solid fa-stethoscope" style="color:var(--primary);"></i> Bedside Clinical Examination & Rx Builder</h3>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Step 6: Log patient vitals, diagnosis, and issue digital prescription.</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('completeRecordsModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="submitVisitRecords(event)">
+          <div style="background:#f8fafc; border-radius:var(--radius-md); padding:1rem; margin-bottom:1.25rem;">
+            <div style="font-weight:800; font-size:0.95rem; color:var(--dark); margin-bottom:0.75rem;">
+              <i class="fa-solid fa-heart-pulse" style="color:var(--danger);"></i> Patient Vitals Log
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.75rem;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.75rem;">Blood Pressure (mmHg)</label>
+                <input type="text" id="vrBloodPressure" class="form-control" value="120/78">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.75rem;">Pulse Rate (bpm)</label>
+                <input type="number" id="vrPulse" class="form-control" value="72">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.75rem;">Temperature (°F)</label>
+                <input type="number" step="0.1" id="vrTemp" class="form-control" value="98.4">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.75rem;">SpO2 (%)</label>
+                <input type="number" id="vrSpo2" class="form-control" value="99">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.75rem;">Blood Sugar (mg/dL)</label>
+                <input type="number" step="0.1" id="vrSugar" class="form-control" value="105.0">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.75rem;">Respiration (bpm)</label>
+                <input type="number" id="vrResp" class="form-control" value="16">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Clinical Observations & Examination</label>
+              <textarea id="vrNotes" class="form-control" rows="2">Wound healing satisfactorily without erythema. Sutures intact. Vitals normal.</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Treatment & Procedures Administered</label>
+              <textarea id="vrTreatment" class="form-control" rows="2">Sterile wound cleaning, Aquacel Ag dressing applied, IV infusion administered.</textarea>
+            </div>
+          </div>
+
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:1rem; margin-bottom:1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+              <div style="font-weight:800; font-size:0.95rem; color:#166534;">
+                <i class="fa-solid fa-prescription"></i> Digital Prescription Builder
+              </div>
+              <button type="button" class="btn btn-sm btn-primary" onclick="addPrescriptionRow()">
+                <i class="fa-solid fa-plus"></i> Add Medicine
+              </button>
+            </div>
+
+            <div class="form-grid-2" style="margin-bottom:0.75rem;">
+              <div>
+                <label class="form-label" style="font-size:0.75rem;">Supervising Clinician / Doctor</label>
+                <input type="text" id="rxDoctorName" class="form-control" value="Dr. James Wilson, MD">
+              </div>
+              <div>
+                <label class="form-label" style="font-size:0.75rem;">Clinical Diagnosis</label>
+                <input type="text" id="rxDiagnosis" class="form-control" value="Post-Op Recovery & Wound Management">
+              </div>
+            </div>
+
+            <div id="prescriptionRowsContainer"></div>
+
+            <div class="form-grid-2" style="margin-top:0.75rem;">
+              <div>
+                <label class="form-label" style="font-size:0.75rem;">Special Instructions / Precautions</label>
+                <input type="text" id="rxSpecialInstructions" class="form-control" value="Keep surgical dressing dry. Avoid heavy lifting.">
+              </div>
+              <div>
+                <label class="form-label" style="font-size:0.75rem;">Recommended Follow-up Date</label>
+                <input type="date" id="rxFollowUpDate" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Attach Diagnostic / Lab Report (Optional)</label>
+            <input type="file" class="form-control" onchange="handleVisitReportUpload(this.files)">
+            <div id="visitReportUploadStatus" style="margin-top:0.25rem;"></div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+            <i class="fa-solid fa-floppy-disk"></i> Complete Visit & Save Clinical Records (Step 6 Done)
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Payment Checkout Modal (Step 7) -->
+  <div id="paymentModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title"><i class="fa-solid fa-credit-card" style="color:var(--primary);"></i> Healthcare Service Payment</h3>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Step 7: Choose your preferred payment method.</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('paymentModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#f8fafc; border-radius:var(--radius-md); padding:1rem; margin-bottom:1.25rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem; font-size:0.875rem;">
+            <span><strong id="payServiceTitle">Skilled Nursing Care</strong></span>
+            <span id="payBasePrice">$65.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem; font-size:0.85rem; color:var(--text-muted);">
+            <span>Consumables & PPE Kit</span>
+            <span id="payConsumables">$15.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.85rem; color:var(--text-muted);">
+            <span>Healthcare Service Tax (5%)</span>
+            <span id="payTax">$4.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; border-top:1px solid var(--border); padding-top:0.5rem; font-size:1.1rem; font-weight:800;">
+            <span>Total Payable</span>
+            <span id="payTotalAmount" style="color:var(--primary);">$84.00</span>
+          </div>
+        </div>
+
+        <div class="payment-tabs">
+          <button type="button" id="payTabCard" class="pay-tab-btn active" onclick="selectPaymentMethod('online_card')">
+            <i class="fa-solid fa-credit-card"></i> Credit / Debit Card
+          </button>
+          <button type="button" id="payTabUpi" class="pay-tab-btn" onclick="selectPaymentMethod('online_upi')">
+            <i class="fa-solid fa-qrcode"></i> UPI & QR Code
+          </button>
+          <button type="button" id="payTabCash" class="pay-tab-btn" onclick="selectPaymentMethod('cash')">
+            <i class="fa-solid fa-money-bill-wave"></i> Cash on Service
+          </button>
+        </div>
+
+        <form onsubmit="submitPayment(event)">
+          <div id="payCardSection">
+            <div class="credit-card-preview">
+              <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
+                <span style="font-size:0.8rem; font-weight:700; color:#34d399;">HOMECARE PAY SECURE</span>
+                <i class="fa-brands fa-cc-visa" style="font-size:1.5rem;"></i>
+              </div>
+              <div style="font-size:1.25rem; letter-spacing:2px; font-family:monospace; margin-bottom:0.75rem;">
+                4532 •••• •••• 8842
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
+                <span>CARD HOLDER: JOHN DOE</span>
+                <span>EXP: 08/28</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Card Number</label>
+              <input type="text" class="form-control" value="4532 8900 1234 8842">
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Expiry (MM/YY)</label>
+                <input type="text" class="form-control" value="08/28">
+              </div>
+              <div class="form-group">
+                <label class="form-label">CVV / CVC</label>
+                <input type="password" class="form-control" value="882" maxlength="4">
+              </div>
+            </div>
+          </div>
+
+          <div id="payUpiSection" style="display:none;">
+            <div class="upi-qr-box">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=homecare@upi&pn=HomeCarePro&am=84.00" alt="UPI QR" class="qr-code-img">
+              <div style="font-weight:700; font-size:0.9rem;">Scan with eSewa / Khalti / Google Pay</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">UPI ID: <strong>homecare@upi</strong></div>
+            </div>
+          </div>
+
+          <div id="payCashSection" style="display:none;">
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:1.25rem; text-align:center;">
+              <i class="fa-solid fa-hand-holding-dollar" style="font-size:2rem; color:var(--primary); margin-bottom:0.5rem; display:block;"></i>
+              <div style="font-weight:800; font-size:1rem; color:#166534;">Pay by Cash After Home Visit</div>
+              <div style="font-size:0.8rem; color:#15803d; margin-top:0.25rem;">Hand over exact cash to attending healthcare staff. Digital receipt will be generated.</div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:1.25rem;">
+            <i class="fa-solid fa-lock"></i> Authorize & Complete Payment
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Printable Digital Prescription Modal (Step 8) -->
+  <div id="prescriptionModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:850px;">
+      <div class="modal-header no-print">
+        <h3 class="modal-title"><i class="fa-solid fa-prescription" style="color:var(--primary);"></i> Digital Medical Prescription</h3>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary btn-sm" onclick="printCurrentModalArea()"><i class="fa-solid fa-print"></i> Print / Download PDF</button>
+          <button class="modal-close-btn" onclick="closeModal('prescriptionModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="modal-body" id="prescriptionModalContent"></div>
+    </div>
+  </div>
+
+  <!-- 7. Printable Tax Invoice Modal (Step 8) -->
+  <div id="invoiceModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:750px;">
+      <div class="modal-header no-print">
+        <h3 class="modal-title"><i class="fa-solid fa-receipt" style="color:var(--secondary);"></i> Tax Invoice & Payment Receipt</h3>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary btn-sm" onclick="printCurrentModalArea()"><i class="fa-solid fa-print"></i> Print / Download PDF</button>
+          <button class="modal-close-btn" onclick="closeModal('invoiceModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="modal-body" id="invoiceModalContent"></div>
+    </div>
+  </div>
+
+  <!-- 8. Feedback, Rating & Issue Resolution Gateway Modal (Step 9) -->
+  <div id="feedbackModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title"><i class="fa-solid fa-star" style="color:var(--warning);"></i> Feedback & Service Rating</h3>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Step 9: Rate your experience and tell us if you faced any issues.</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('feedbackModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="submitFeedbackDecision(event)">
+          <div style="text-align:center;">
+            <div style="font-weight:700; font-size:0.95rem; margin-bottom:0.5rem;">Rate Attending Healthcare Professional</div>
+            <div id="starRatingContainer" class="star-rating-box">
+              <i class="fa-solid fa-star star active" data-value="1" onclick="setStarRating(1)"></i>
+              <i class="fa-solid fa-star star active" data-value="2" onclick="setStarRating(2)"></i>
+              <i class="fa-solid fa-star star active" data-value="3" onclick="setStarRating(3)"></i>
+              <i class="fa-solid fa-star star active" data-value="4" onclick="setStarRating(4)"></i>
+              <i class="fa-solid fa-star star active" data-value="5" onclick="setStarRating(5)"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Service Highlights</label>
+            <div id="feedbackTagsList" style="display:flex; gap:0.4rem; flex-wrap:wrap;"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Written Comments / Experience Review</label>
+            <textarea id="feedbackComments" class="form-control" rows="2" placeholder="Write your review...">Nurse Sarah was exceptionally gentle and professional. Vitals taken accurately.</textarea>
+          </div>
+
+          <div class="form-group" style="margin-top:1.25rem;">
+            <label class="form-label" style="text-align:center; font-size:0.95rem;">Are you satisfied with the home healthcare service?</label>
+            <div class="satisfaction-choice-group">
+              <div id="satisfactionCardYes" class="satisfaction-card selected-yes" onclick="setSatisfactionDecision(true)">
+                <i class="fa-solid fa-face-smile" style="font-size:1.5rem; color:var(--success); margin-bottom:0.25rem; display:block;"></i>
+                <strong>Yes, Satisfied</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Complete service and submit review</div>
+              </div>
+
+              <div id="satisfactionCardNo" class="satisfaction-card" onclick="setSatisfactionDecision(false)">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; color:var(--danger); margin-bottom:0.25rem; display:block;"></i>
+                <strong>No, Issue Faced</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Open Issue Resolution & refund/re-visit</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="issueResolutionFormSection" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:var(--radius-md); padding:1rem; margin-bottom:1.25rem;">
+            <div style="font-weight:800; font-size:0.9rem; color:var(--danger); margin-bottom:0.75rem;">
+              <i class="fa-solid fa-headset"></i> Issue Resolution Center Ticket
+            </div>
+            
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label" style="font-size:0.75rem;">Issue Category</label>
+                <select id="issueCategorySelect" class="form-control">
+                  <option value="Staff Delayed / Late Arrival">Staff Delayed / Late Arrival</option>
+                  <option value="Treatment / Service Quality">Treatment / Service Quality</option>
+                  <option value="Billing / Payment Discrepancy">Billing / Payment Discrepancy</option>
+                  <option value="Unprofessional Demeanor">Unprofessional Demeanor</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:0.75rem;">Desired Remedy</label>
+                <select id="issueDesiredResolution" class="form-control">
+                  <option value="Full / Partial Refund">Full / Partial Refund</option>
+                  <option value="Free Re-visit / Replacement Staff">Free Re-visit / Replacement Staff</option>
+                  <option value="Senior Medical Officer Call">Senior Medical Officer Call</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size:0.75rem;">Describe the problem for Admin Review</label>
+              <textarea id="issueDescription" class="form-control" rows="2" placeholder="Please describe what went wrong..."></textarea>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+            <i class="fa-solid fa-paper-plane"></i> Submit Feedback & Resolution Decision
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Admin Resolve Ticket Modal -->
+  <div id="resolveTicketModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-gavel" style="color:var(--primary);"></i> Resolve Issue <span id="resolveTicketNumberSpan"></span></h3>
+        <button class="modal-close-btn" onclick="closeModal('resolveTicketModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="submitTicketResolution(event)">
+          <div class="form-group">
+            <label class="form-label">Resolution Status</label>
+            <select id="resolveTicketStatus" class="form-control">
+              <option value="Resolved">Resolved (Resolution Accepted)</option>
+              <option value="Refund Processed">Refund Processed to Patient</option>
+              <option value="In Review">In Review (Awaiting Investigation)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Admin Resolution Summary / Action Taken</label>
+            <textarea id="resolveTicketNotes" class="form-control" rows="3" placeholder="e.g. Apologized to patient, issued a refund and rescheduled follow-up." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">
+            <i class="fa-solid fa-check"></i> Save Resolution & Close Ticket
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Medical Background Animation & App Scripts -->
+  <script src="/static/js/medical_animation.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/booking.js"></script>
+  <script src="/static/js/admin.js"></script>
+  <script src="/static/js/professional.js"></script>
+  <script src="/static/js/records.js"></script>
+  <script src="/static/js/feedback.js"></script>
+</body>
+</html>

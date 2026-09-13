@@ -1,0 +1,174 @@
+﻿/* ==========================================================================
+   Doctor Examining Patient Animation Stylesheet
+   Realistic, Smooth, Aesthetic Hospital/Home Clinical Scene
+   ========================================================================== */
+
+/* Doctor Examination Showcase Container */
+.doctor-checkup-stage {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.6) 70%);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 1rem 1rem 1rem;
+  box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.35), 0 0 25px rgba(16, 185, 129, 0.2);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+
+.doctor-checkup-stage::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #38bdf8, #8b5cf6, #10b981);
+  background-size: 200% 100%;
+  animation: auroraFlow 3s linear infinite;
+}
+
+/* SVG Scene Elements Animation */
+.anim-doc-arm {
+  transform-origin: 240px 145px;
+  animation: doctorStethoscopeMove 3.5s ease-in-out infinite;
+}
+
+.anim-patient-chest {
+  transform-origin: 155px 190px;
+  animation: patientBreathing 3.5s ease-in-out infinite;
+}
+
+.anim-stetho-pulse {
+  transform-origin: 175px 172px;
+  animation: stethoHeartbeatPulse 1.75s ease-out infinite;
+}
+
+.anim-monitor-screen {
+  animation: monitorGlow 2s ease-in-out infinite;
+}
+
+.anim-ecg-trace {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: ecgDash 2s linear infinite;
+}
+
+.anim-doc-head {
+  transform-origin: 260px 105px;
+  animation: docHeadNod 4s ease-in-out infinite;
+}
+
+.anim-patient-blink {
+  transform-origin: 150px 125px;
+  animation: eyeBlink 4s infinite;
+}
+
+/* Keyframes */
+@keyframes doctorStethoscopeMove {
+  0%, 100% {
+    transform: rotate(0deg) translate(0, 0);
+  }
+  30% {
+    transform: rotate(-3deg) translate(-2px, 3px);
+  }
+  60% {
+    transform: rotate(2deg) translate(3px, -2px);
+  }
+  80% {
+    transform: rotate(-1deg) translate(-1px, 1px);
+  }
+}
+
+@keyframes patientBreathing {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035) translate(-1px, -2px);
+  }
+}
+
+@keyframes stethoHeartbeatPulse {
+  0% {
+    r: 4;
+    opacity: 0.9;
+    stroke-width: 2;
+  }
+  50% {
+    r: 16;
+    opacity: 0.4;
+    stroke-width: 1.5;
+  }
+  100% {
+    r: 26;
+    opacity: 0;
+    stroke-width: 0.5;
+  }
+}
+
+@keyframes monitorGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px #10b981);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px #34d399);
+  }
+}
+
+@keyframes ecgDash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes docHeadNod {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(2.5deg) translate(1px, 2px);
+  }
+}
+
+@keyframes eyeBlink {
+  0%, 95%, 100% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(0.1);
+  }
+}
+
+/* Floating Clinical Status Badges */
+.checkup-badge-floating {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-full);
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
+
+.checkup-badge-top {
+  top: 14px;
+  right: 14px;
+  border-color: #38bdf8;
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.checkup-badge-bottom {
+  bottom: 12px;
+  left: 14px;
+  border-color: #10b981;
+  animation: floatSlow 5s ease-in-out 1s infinite;
+}

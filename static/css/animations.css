@@ -1,0 +1,201 @@
+﻿/* ==========================================================================
+   Home Healthcare Management System - Animations & Hospital Visuals
+   ========================================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  12% { transform: scale(1.22); color: #ef4444; }
+  24% { transform: scale(1); }
+  36% { transform: scale(1.18); color: #ef4444; }
+  60% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes ecgGlowMove {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes auroraFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.85); }
+}
+
+@keyframes shimmerEffect {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* Medical Animated Classes */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-float {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.animate-heartbeat {
+  animation: heartbeat 1.4s ease-in-out infinite;
+  display: inline-block;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.live-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: liveBlink 1.5s infinite;
+  margin-right: 4px;
+}
+
+/* Glassmorphism with glowing medical borders */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+/* Live Hospital Telemetry Vitals Header */
+.hospital-vitals-ticker {
+  position: relative;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  color: white;
+  border-radius: var(--radius-full);
+  padding: 0.4rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-size: 0.8rem;
+  margin-top: 1rem;
+}
+
+.hospital-vitals-ticker::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, 0.08) 45%, rgba(16, 185, 129, 0.32) 50%, rgba(56, 189, 248, 0.08) 55%, transparent 100%);
+  transform: translateX(-100%);
+  animation: hospitalScan 3.8s ease-in-out infinite;
+}
+
+.hospital-vitals-ticker::after {
+  content: "";
+  position: absolute;
+  left: 1.2rem;
+  right: 1.2rem;
+  bottom: 0.18rem;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #10b981 18%, #38bdf8 35%, #10b981 52%, transparent 82%);
+  background-size: 220% 100%;
+  opacity: 0.7;
+  animation: ecgMonitorLine 2.4s linear infinite;
+}
+
+@keyframes hospitalScan {
+  0%, 18% { transform: translateX(-100%); }
+  62%, 100% { transform: translateX(100%); }
+}
+
+@keyframes ecgMonitorLine {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.vital-metric {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vital-metric .metric-val {
+  font-weight: 800;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hospital-vitals-ticker::before,
+  .hospital-vitals-ticker::after {
+    animation: none;
+  }
+}

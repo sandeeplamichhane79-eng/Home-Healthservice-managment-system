@@ -1,0 +1,122 @@
+﻿/* Add Nepal Emblem Logo & Auth Portal Styling */
+.emblem-logo {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  transition: transform 0.3s ease;
+}
+
+.emblem-logo:hover {
+  transform: scale(1.05);
+}
+
+.gov-branding-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.gov-title-np {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #dc2626;
+  letter-spacing: 0.5px;
+}
+
+.gov-title-en {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+}
+
+.gov-subtitle {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Dedicated Login View / Modal */
+.login-card-container {
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  max-width: 520px;
+  margin: 2rem auto;
+}
+
+.login-header-banner {
+  background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%);
+  color: white;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  position: relative;
+}
+
+.login-header-banner .emblem-logo {
+  height: 75px;
+  margin-bottom: 0.75rem;
+}
+
+.login-tab-switch {
+  display: flex;
+  background: #f1f5f9;
+  border-bottom: 1px solid var(--border);
+}
+
+.login-tab-btn {
+  flex: 1;
+  padding: 0.85rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  transition: var(--transition-fast);
+}
+
+.login-tab-btn.active {
+  background: white;
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+}
+
+.preset-credentials-box {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.preset-chip {
+  background: white;
+  border: 1px solid #cbd5e1;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.2rem;
+  transition: var(--transition-fast);
+}
+
+.preset-chip:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.rx-logo-header {
+  height: 48px;
+  object-fit: contain;
+  margin-right: 0.75rem;
+}
