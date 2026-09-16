@@ -15,12 +15,24 @@ const AppState = {
 
 const uiTranslations = {
   "QUICK ROLE ACCESS (1-CLICK TEST):": "छिटो भूमिका पहुँच (एक क्लिक परीक्षण):",
+  "Patient": "बिरामी",
+  "Admin": "प्रशासन",
+  "Nurse": "नर्स",
+  "Doctor": "डाक्टर",
+  "Therapist": "थेरापिस्ट",
+  "Pharmacist": "फार्मासिस्ट",
   "Patient (John Doe)": "बिरामी (John Doe)",
   "Admin (Dr. Vance)": "प्रशासन (Dr. Vance)",
   "Nurse (Sarah, RN)": "नर्स (Sarah, RN)",
   "Doctor (Dr. Wilson)": "डाक्टर (Dr. Wilson)",
   "Therapist (Elena)": "थेरापिस्ट (Elena)",
   "Pharmacist (Chetna)": "फार्मासिस्ट (Chetna)",
+  "Nurse (Rama)": "नर्स (राम)",
+  "Nurse (Chetna)": "नर्स (चेतना)",
+  "Doctor (Binod Thapa)": "डाक्टर (विनोद थापा)",
+  "Doctor (Sunil)": "डाक्टर (सुनिल)",
+  "Doctor (Sahil)": "डाक्टर (साहिल)",
+  "Pharmacist": "फार्मासिस्ट",
   "ID/Password Login": "ID/पासवर्ड लगइन",
   "Login": "लगइन",
   "Logout": "लगआउट",
@@ -47,9 +59,13 @@ const uiTranslations = {
   "PHARMACIST": "फार्मासिस्ट",
   "ADMIN": "प्रशासन",
   "Language": "भाषा",
+  "Home Service Healthcare Management System": "घर सेवा स्वास्थ्य व्यवस्थापन प्रणाली",
   "Home Healthcare Online Appointments with Expert Doctors": "घरमै स्वास्थ्य सेवा अनलाइन अपोइन्टमेन्ट विशेषज्ञ चिकित्सक",
   "Safe and Reliable Care": "सुरक्षित र भरपर्दो सेवा",
   "Home Healthcare Workflow Lifecycle (9 Steps)": "घरमै स्वास्थ्य सेवा प्रक्रिया (९ चरण)",
+  "Phone:": "फोन:",
+  "Email:": "इमेल:",
+  "Navigation": "नेभिगेसन",
   "Click any step node to jump into action": "कार्य सुरु गर्न कुनै पनि चरण छान्नुहोस्",
   "1. Reg & Login": "१. दर्ता र लगइन",
   "2. Select Service": "२. सेवा छनोट",
@@ -165,21 +181,24 @@ function localizePage(language = document.documentElement.lang === "ne" ? "ne" :
     const text = element.dataset[language];
     if (text) element.textContent = text;
   });
+
   const translate = (value) => {
     const source = value.trim();
     if (!source) return value;
-    const translated = language === "ne" ? uiTranslations[source] : source;
-    if (!translated) return value;
-    return value.replace(source, translated);
+    if (language === "en") return source;
+    const translated = uiTranslations[source];
+    return translated || source;
   };
+
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let node;
   while ((node = walker.nextNode())) {
-    if (node.parentElement.closest("script, style, [data-i18n]")) continue;
+    if (node.parentElement && node.parentElement.closest("script, style, [data-i18n]")) continue;
     if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue);
     const original = originalTextNodes.get(node);
-    node.nodeValue = language === "en" ? original : translate(original);
+    node.nodeValue = translate(original);
   }
+
   document.querySelectorAll("[placeholder], [title]").forEach((element) => {
     ["placeholder", "title"].forEach((attribute) => {
       const value = element.getAttribute(attribute);
@@ -303,7 +322,10 @@ function updateUserHeaderUI() {
   const badgeSection = document.getElementById("userBadgeSection");
 
   if (AppState.currentUser) {
-    if (nameEl) nameEl.textContent = AppState.currentUser.name;
+    if (nameEl) {
+      const genericUserNames = { admin: "Admin", pharmacist: "Pharmacist" };
+      nameEl.textContent = genericUserNames[AppState.currentUser.role] || AppState.currentUser.name;
+    }
     if (roleEl) {
       let roleDisplay = AppState.currentUser.role.toUpperCase();
       if (AppState.currentUser.specialization) {
@@ -311,7 +333,7 @@ function updateUserHeaderUI() {
       }
       roleEl.textContent = roleDisplay;
     }
-    if (avatarEl) avatarEl.src = AppState.currentUser.avatar || "/static/images/nepal_emblem_logo.png";
+    if (avatarEl) avatarEl.src = AppState.currentUser.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100";
     if (badgeSection) badgeSection.style.display = "flex";
   }
 
@@ -381,15 +403,12 @@ function renderRoleSpecificViews() {
     if (roleBanner) {
       roleBanner.innerHTML = `
         <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 1rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #38bdf8;">
-          <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="/static/images/nepal_emblem_logo.png" style="height:44px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-            <div>
-              <div style="font-size:0.75rem; color:#38bdf8; font-weight:700; text-transform:uppercase;">Admin Portal Active</div>
-              <h3 style="margin:0; font-size:1.2rem; font-weight:800;">Command & Healthcare Dispatch Center</h3>
-            </div>
+          <div>
+            <div style="font-size:0.75rem; color:#38bdf8; font-weight:700; text-transform:uppercase;">Admin Portal Active</div>
+            <h3 style="margin:0; font-size:1.2rem; font-weight:800;">Command & Healthcare Dispatch Center</h3>
           </div>
           <div style="text-align:right;">
-            <span class="badge badge-assigned" style="font-size:0.8rem;"><i class="fa-solid fa-shield-halved"></i> Administrator: ${AppState.currentUser.name}</span>
+            <span class="badge badge-assigned" style="font-size:0.8rem;"><i class="fa-solid fa-shield-halved"></i> Admin</span>
           </div>
         </div>
       `;
@@ -408,16 +427,13 @@ function renderRoleSpecificViews() {
     if (roleBanner) {
       roleBanner.innerHTML = `
         <div style="background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); color: white; padding: 1rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #10b981;">
-          <div style="display:flex; align-items:center; gap:1rem;">
-            <img src="/static/images/nepal_emblem_logo.png" style="height:44px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-            <div>
-              <div style="font-size:0.75rem; color:#34d399; font-weight:700; text-transform:uppercase;">${portal.label} Active</div>
-              <h3 style="margin:0; font-size:1.2rem; font-weight:800;">${AppState.currentUser.name}</h3>
-              <div style="font-size:0.8rem; color:#cbd5e1;">${AppState.currentUser.specialization || 'Registered Healthcare Professional'} (${AppState.currentUser.qualification || 'Certified'})</div>
-            </div>
+          <div>
+            <div style="font-size:0.75rem; color:#34d399; font-weight:700; text-transform:uppercase;">${portal.label} Active</div>
+            <h3 style="margin:0; font-size:1.2rem; font-weight:800;">${portal.label}</h3>
+            <div style="font-size:0.8rem; color:#cbd5e1;">${AppState.currentUser.specialization || 'Registered Healthcare Professional'}</div>
           </div>
           <div style="text-align:right;">
-            <span class="badge badge-completed" style="font-size:0.8rem;"><i class="fa-solid fa-star" style="color:#f59e0b;"></i> Rating: ${AppState.currentUser.rating || 4.9}</span>
+            <span class="badge badge-completed" style="font-size:0.8rem;"><i class="fa-solid fa-star" style="color:#f59e0b;"></i> ${portal.label}</span>
           </div>
         </div>
       `;
@@ -435,12 +451,9 @@ function renderRoleSpecificViews() {
     if (roleBanner) {
       roleBanner.innerHTML = `
         <div style="background: linear-gradient(135deg, #065f46 0%, #1e293b 100%); color: white; padding: 0.85rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #10b981;">
-          <div style="display:flex; align-items:center; gap:0.75rem;">
-            <img src="/static/images/nepal_emblem_logo.png" style="height:38px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-            <div>
-              <div style="font-size:0.7rem; color:#34d399; font-weight:700; text-transform:uppercase;">Patient Portal Active</div>
-              <h4 style="margin:0; font-size:1.05rem; font-weight:800;">Namaste, ${AppState.currentUser.name}</h4>
-            </div>
+          <div>
+            <div style="font-size:0.7rem; color:#34d399; font-weight:700; text-transform:uppercase;">Patient Portal Active</div>
+            <h4 style="margin:0; font-size:1.05rem; font-weight:800;">Namaste, ${AppState.currentUser.name}</h4>
           </div>
           <div style="font-size:0.8rem; color:#cbd5e1;">
             Blood Group: <strong style="color:#34d399;">${AppState.currentUser.blood_group || 'O+'}</strong> | Phone: ${AppState.currentUser.phone || 'N/A'}

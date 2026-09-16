@@ -157,8 +157,8 @@ def demo_switch():
         cursor.execute("SELECT * FROM users WHERE email = 'dr.sahil@demo.com' LIMIT 1")
     elif target_role == "therapist":
         cursor.execute("SELECT * FROM users WHERE email = 'therapist.asha@demo.com' LIMIT 1")
-    elif target_role in ("pharmacist", "pharm", "shyam"):
-        cursor.execute("SELECT * FROM users WHERE email = 'pharm.shyam@demo.com' LIMIT 1")
+    elif target_role in ("pharmacist", "pharm"):
+        cursor.execute("SELECT * FROM users WHERE email = 'pharm@demo.com' LIMIT 1")
     elif target_role == "professional":
         cursor.execute("SELECT * FROM users WHERE role IN ('professional', 'pharmacist') LIMIT 1")
     else:  # patient

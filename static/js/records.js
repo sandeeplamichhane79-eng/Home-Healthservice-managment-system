@@ -374,7 +374,7 @@ async function viewPrescriptionModal(appId) {
       <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed #cbd5e1; padding-top:1.5rem;">
         <div style="font-size:0.75rem; color:#64748b;">
           <div style="font-weight:700; color:#0f172a; margin-bottom:0.2rem;"><i class="fa-solid fa-pills" style="color:var(--primary);"></i> Dispensed & Verified By:</div>
-          <div><strong>Pharmacist Shyam</strong> (B.Pharm, Reg #NP-88421)</div>
+          <div><strong>Pharmacist</strong></div>
           <div>Care Nurse: <strong>Rama</strong> (RN)</div>
         </div>
         <div style="text-align:center;">

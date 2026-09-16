@@ -110,7 +110,7 @@ function openAssignModal(appId) {
     <option value="">-- Choose Certified Healthcare Provider --</option>
     ${allHealthcareStaff.map(s => `
       <option value="${s.id}">
-        ${s.name} (${s.specialization}) - Rating: ⭐${s.rating} | Exp: ${s.experience_years} yrs
+        ${s.name || 'Healthcare Professional'}${s.specialization ? ` - ${s.specialization}` : ''}
       </option>
     `).join("")}
   `;

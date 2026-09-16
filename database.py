@@ -133,7 +133,7 @@ def init_db(force_reseed=False):
         patient_id INTEGER NOT NULL,
         professional_id INTEGER NOT NULL,
         doctor_name TEXT NOT NULL,
-        pharmacist_name TEXT DEFAULT 'Shyam (Pharmacist)',
+        pharmacist_name TEXT DEFAULT 'Pharmacist',
         diagnosis TEXT NOT NULL,
         medicines_json TEXT NOT NULL,
         special_instructions TEXT,
@@ -209,8 +209,8 @@ def init_db(force_reseed=False):
 def ensure_requested_staff_roster(conn):
     """Apply the current demo roster to both new and existing databases."""
     conn.execute("UPDATE users SET name = ?, email = ? WHERE id = 1", ("Patient", "patient@demo.com"))
-    conn.execute("UPDATE users SET name = ? WHERE email = 'sandeep@demo.com'", ("Sandeep Sharma",))
-    conn.execute("UPDATE users SET name = ?, email = ? WHERE email = 'pharm.chetna@demo.com'", ("Shyam", "pharm.shyam@demo.com"))
+    conn.execute("UPDATE users SET name = ? WHERE email = 'sandeep@demo.com'", ("Admin",))
+    conn.execute("UPDATE users SET name = ?, email = ? WHERE email = 'pharm.chetna@demo.com'", ("Pharmacist", "pharm@demo.com"))
 
     requested_staff = [
         ("Chetna", "nurse.chetna@demo.com", "nurse123", "professional", "+977 9811111111", 30, "Female", "A+", "Baneshwor, Kathmandu", "General Nursing & Patient Care", "BSN, RN", 6, 4.95, "https://images.unsplash.com/photo-1584515933487-779824d29309?w=150"),
@@ -294,7 +294,7 @@ def seed_updated_users_data(conn):
         (
             "Clinical Pharmacy & Medicine Dispensation",
             "Pharmacy",
-            "Doorstep medicine dispensation, medication therapy management, dosage review, and drug interaction verification managed directly by Pharmacist Shyam.",
+            "Doorstep medicine dispensation, medication therapy management, dosage review, and drug interaction verification managed directly by the Pharmacist.",
             35.00,
             "30 mins",
             "fa-pills",
@@ -380,8 +380,8 @@ def seed_updated_users_data(conn):
     INSERT INTO prescriptions (
         appointment_id, patient_id, professional_id, doctor_name, pharmacist_name, diagnosis, medicines_json, special_instructions, follow_up_date
     ) VALUES (
-        ?, 1, 3, 'Dr. Binod Thapa, MD', 'Shyam, B.Pharm', 'Essential Hypertension (Controlled) - Routine Bedside Review',
-        ?, 'Reduce dietary salt. Maintain 30 mins brisk walking daily. Verified and dispensed by Pharmacist Shyam.', ?
+        ?, 1, 3, 'Dr. Binod Thapa, MD', 'Pharmacist, B.Pharm', 'Essential Hypertension (Controlled) - Routine Bedside Review',
+        ?, 'Reduce dietary salt. Maintain 30 mins brisk walking daily. Verified and dispensed by the Pharmacist.', ?
     )
     """, (app_id_1, json.dumps(medicines), (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")))
 
@@ -433,7 +433,7 @@ def seed_updated_users_data(conn):
     ) VALUES (
         'HH-2026-003', 1, 3, NULL, 'Pending', 4,
         ?, '11:00 AM - 11:30 AM', 'Lazimpat, Kathmandu',
-        'Monthly chronic prescription refill and medicine therapy counseling by Pharmacist Shyam.',
+        'Monthly chronic prescription refill and medicine therapy counseling by the Pharmacist.',
         'Sita Sharma (Spouse)', '+977 9841000000', '[]'
     )
     """, ((datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),))

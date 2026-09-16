@@ -24,81 +24,60 @@
   <aside class="demo-role-bar">
     <div class="demo-title">
       <i class="fa-solid fa-arrows-spin animate-spin" style="animation-duration: 4s;"></i>
-      <span>QUICK ROLE ACCESS (1-CLICK TEST):</span>
+      <span data-i18n data-en="QUICK ROLE ACCESS (1-CLICK TEST):" data-ne="छिटो भूमिका पहुँच (एक क्लिक परीक्षण):">QUICK ROLE ACCESS (1-CLICK TEST):</span>
     </div>
     <div class="role-chips">
       <button class="role-chip-btn active" data-role="patient" onclick="switchDemoRole('patient')" title="Switch to Patient">
-        <i class="fa-solid fa-user"></i> Patient
+        <i class="fa-solid fa-user"></i> <span data-i18n data-en="Patient" data-ne="बिरामी">Patient</span>
       </button>
-      <button class="role-chip-btn" data-role="admin" onclick="switchDemoRole('admin')" title="Switch to Admin Sandeep Sharma">
-        <i class="fa-solid fa-shield-halved"></i> Admin (Sandeep Sharma)
+      <button class="role-chip-btn" data-role="admin" onclick="switchDemoRole('admin')" title="Switch to Admin">
+        <i class="fa-solid fa-shield-halved"></i> <span data-i18n data-en="Admin" data-ne="प्रशासन">Admin</span>
       </button>
       <button class="role-chip-btn" data-role="nurse" onclick="switchDemoRole('nurse')" title="Switch to Nurse Rama">
-        <i class="fa-solid fa-user-nurse"></i> Nurse (Rama)
+        <i class="fa-solid fa-user-nurse"></i> <span data-i18n data-en="Nurse (Rama)" data-ne="नर्स (राम)">Nurse (Rama)</span>
       </button>
       <button class="role-chip-btn" data-role="nurse_chetna" onclick="switchDemoRole('nurse_chetna')" title="Switch to Nurse Chetna">
-        <i class="fa-solid fa-user-nurse"></i> Nurse (Chetna)
+        <i class="fa-solid fa-user-nurse"></i> <span data-i18n data-en="Nurse (Chetna)" data-ne="नर्स (चेतना)">Nurse (Chetna)</span>
       </button>
       <button class="role-chip-btn" data-role="doctor" onclick="switchDemoRole('doctor')" title="Switch to Doctor Binod Thapa">
-        <i class="fa-solid fa-user-doctor"></i> Doctor (Binod Thapa)
+        <i class="fa-solid fa-user-doctor"></i> <span data-i18n data-en="Doctor (Binod Thapa)" data-ne="डाक्टर (विनोद थापा)">Doctor (Binod Thapa)</span>
       </button>
       <button class="role-chip-btn" data-role="doctor_sunil" onclick="switchDemoRole('doctor_sunil')" title="Switch to Doctor Sunil">
-        <i class="fa-solid fa-user-doctor"></i> Doctor (Sunil)
+        <i class="fa-solid fa-user-doctor"></i> <span data-i18n data-en="Doctor (Sunil)" data-ne="डाक्टर (सुनिल)">Doctor (Sunil)</span>
       </button>
       <button class="role-chip-btn" data-role="doctor_sahil" onclick="switchDemoRole('doctor_sahil')" title="Switch to Doctor Sahil">
-        <i class="fa-solid fa-user-doctor"></i> Doctor (Sahil)
+        <i class="fa-solid fa-user-doctor"></i> <span data-i18n data-en="Doctor (Sahil)" data-ne="डाक्टर (साहिल)">Doctor (Sahil)</span>
       </button>
       <button class="role-chip-btn" data-role="therapist" onclick="switchDemoRole('therapist')" title="Switch to Therapist">
-        <i class="fa-solid fa-person-walking"></i> Therapist
+        <i class="fa-solid fa-person-walking"></i> <span data-i18n data-en="Therapist" data-ne="थेरापिस्ट">Therapist</span>
       </button>
-      <button class="role-chip-btn" data-role="pharmacist" onclick="switchDemoRole('pharmacist')" title="Switch to Pharmacist Shyam">
-        <i class="fa-solid fa-pills"></i> Pharmacist (Shyam)
+      <button class="role-chip-btn" data-role="pharmacist" onclick="switchDemoRole('pharmacist')" title="Switch to Pharmacist">
+        <i class="fa-solid fa-pills"></i> <span data-i18n data-en="Pharmacist" data-ne="फार्मासिस्ट">Pharmacist</span>
       </button>
       <button class="role-chip-btn" data-role="login" onclick="openLoginModal()" style="background:#0284c7; color:white; border-color:#38bdf8;">
-        <i class="fa-solid fa-key"></i> ID/Password Login
+        <i class="fa-solid fa-key"></i> <span data-i18n data-en="ID/Password Login" data-ne="ID/पासवर्ड लगइन">ID/Password Login</span>
       </button>
     </div>
   </aside>
 
-  <!-- Government service masthead -->
   <header class="navbar">
-    <div class="government-masthead">
-      <div class="masthead-service-info">
-        <strong data-i18n data-en="Home Healthcare Online Appointments with Expert Doctors" data-ne="घरमै स्वास्थ्य सेवा अनलाइन अपोइन्टमेन्ट विशेषज्ञ चिकित्सक">Home Healthcare Online Appointments with Expert Doctors</strong>
+    <div class="container nav-wrapper">
+      <div class="masthead-service-info" style="display:flex; flex-direction:column; gap:0.2rem; margin-right:auto;">
+        <strong data-i18n data-en="Home Service Healthcare Management System" data-ne="घर सेवा स्वास्थ्य व्यवस्थापन प्रणाली">Home Service Healthcare Management System</strong>
         <strong data-i18n data-en="Safe and Reliable Care" data-ne="सुरक्षित र भरपर्दो सेवा">Safe and Reliable Care</strong>
         <div class="masthead-contact">
           <span>Phone: +977 9829691414</span>
-          <span>Email: healthservice123@gmail.com</span>
+          <span>Email: healthcare123@gmail.com</span>
         </div>
       </div>
 
-      <div class="nepal-flag-card" role="img" aria-label="Flag of Nepal">
-        <svg viewBox="0 0 120 150" aria-hidden="true">
-          <defs>
-            <linearGradient id="flagRed" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#e8113f"/>
-              <stop offset="1" stop-color="#d10a35"/>
-            </linearGradient>
-          </defs>
-          <g class="flag-cloth">
-            <path d="M10 9 L111 76 L58 76 L111 141 L10 141 Z" fill="url(#flagRed)" stroke="#003893" stroke-width="7" stroke-linejoin="miter"/>
-            <!-- Moon and sun use the official Nepal flag placement. -->
-            <path d="M31 38 A24 24 0 0 0 74 51 A19 19 0 0 1 35 57 A22 22 0 0 0 31 38 Z" fill="#fff"/>
-            <path d="M51 29 l3 8 5-7 1 8 7-5 -2 8 8-2 -5 7 8 1 -8 4 5 6 -9-1 1 8 -7-5 -3 8 -3-8 -7 5 1-8 -9 1 5-6 -8-4 8-1 -5-7 8 2 -2-8 7 5 1-8 5 7z" fill="#fff"/>
-            <path d="M53 95 l4 10 8-7 1 11 10-4 -4 10 11 1 -9 7 10 4 -11 3 6 9 -11-1 1 11 -9-6 -3 11 -4-10 -5 10 -3-11 -9 6 1-11 -11 1 6-9 -11-3 10-4 -9-7 11-1 -4-10 10 4 1-11 8 7z" fill="#fff"/>
-          </g>
-        </svg>
-      </div>
-
-      <div class="language-switcher" aria-label="Language selection">
+      <div class="language-switcher" aria-label="Language selection" style="margin-left:auto;">
         <span class="language-label" data-i18n data-en="Language" data-ne="भाषा">Language</span>
         <button type="button" class="language-option active" data-language="en" onclick="setLanguage('en')">English</button>
         <span class="language-divider">|</span>
         <button type="button" class="language-option" data-language="ne" onclick="setLanguage('ne')">नेपाली</button>
       </div>
-    </div>
 
-    <div class="container nav-wrapper">
       <nav class="nav-links">
         <button class="nav-btn active" id="navBtnServices" data-tab="services" onclick="switchTab('services')">
           <i class="fa-solid fa-hand-holding-medical"></i> <span data-i18n data-en="Services Catalog" data-ne="सेवा सूची">Services Catalog</span>
@@ -548,8 +527,7 @@
   <!-- 1. Dedicated Authentication / Login & Register Modal (Step 1) -->
   <div id="authModal" class="modal-backdrop">
     <div class="modal-box" style="max-width:540px;">
-      <div class="login-header-banner">
-        <img src="/static/images/nepal_emblem_logo.png" alt="Emblem" class="emblem-logo">
+      <div class="login-header-banner" style="padding-top:1.25rem; padding-bottom:1rem;">
         <h3 style="font-size:1.3rem; font-weight:800; margin:0;">National Healthcare Portal</h3>
         <div style="font-size:0.8rem; color:#a7f3d0; margin-top:0.25rem;">Sign in to your dedicated Patient, Staff, or Admin portal</div>
         <button class="modal-close-btn" onclick="closeModal('authModal')" style="position:absolute; top:12px; right:12px; color:white;"><i class="fa-solid fa-xmark"></i></button>
@@ -575,8 +553,8 @@
               <button type="button" class="role-login-card" data-login-role="doctor_sunil" onclick="selectRoleLogin('doctor_sunil', 'dr.sunil@demo.com', 'doctor123')"><i class="fa-solid fa-user-doctor"></i><span>Dr. Sunil</span></button>
               <button type="button" class="role-login-card" data-login-role="doctor_sahil" onclick="selectRoleLogin('doctor_sahil', 'dr.sahil@demo.com', 'doctor123')"><i class="fa-solid fa-user-doctor"></i><span>Dr. Sahil</span></button>
               <button type="button" class="role-login-card" data-login-role="therapist" onclick="selectRoleLogin('therapist', 'therapist.asha@demo.com', 'therapist123')"><i class="fa-solid fa-person-walking"></i><span>Therapist</span></button>
-              <button type="button" class="role-login-card" data-login-role="pharmacist" onclick="selectRoleLogin('pharmacist', 'pharm.shyam@demo.com', 'pharm123')"><i class="fa-solid fa-pills"></i><span>Pharmacist Shyam</span></button>
-              <button type="button" class="role-login-card" data-login-role="admin" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')"><i class="fa-solid fa-shield-halved"></i><span>Admin Sandeep Sharma</span></button>
+              <button type="button" class="role-login-card" data-login-role="pharmacist" onclick="selectRoleLogin('pharmacist', 'pharm@demo.com', 'pharm123')"><i class="fa-solid fa-pills"></i><span>Pharmacist</span></button>
+              <button type="button" class="role-login-card" data-login-role="admin" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></button>
             </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address / Username *</label>
@@ -604,7 +582,7 @@
                 <i class="fa-solid fa-user"></i> Patient: patient@demo.com
               </span>
               <span class="preset-chip" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')">
-                <i class="fa-solid fa-shield-halved"></i> Admin: sandeep@demo.com
+                <i class="fa-solid fa-shield-halved"></i> Admin
               </span>
               <span class="preset-chip" onclick="selectRoleLogin('nurse', 'nurse.rama@demo.com', 'nurse123')">
                 <i class="fa-solid fa-user-nurse"></i> Rama: nurse.rama@demo.com
@@ -1043,11 +1021,11 @@
           <div style="text-align:center;">
             <div style="font-weight:700; font-size:0.95rem; margin-bottom:0.5rem;">Rate Attending Healthcare Professional</div>
             <div id="starRatingContainer" class="star-rating-box">
-              <i class="fa-solid fa-star star active" data-value="1" onclick="setStarRating(1)"></i>
-              <i class="fa-solid fa-star star active" data-value="2" onclick="setStarRating(2)"></i>
-              <i class="fa-solid fa-star star active" data-value="3" onclick="setStarRating(3)"></i>
-              <i class="fa-solid fa-star star active" data-value="4" onclick="setStarRating(4)"></i>
-              <i class="fa-solid fa-star star active" data-value="5" onclick="setStarRating(5)"></i>
+              <i class="fa-solid fa-star star" data-value="1" onclick="setStarRating(1)"></i>
+              <i class="fa-solid fa-star star" data-value="2" onclick="setStarRating(2)"></i>
+              <i class="fa-solid fa-star star" data-value="3" onclick="setStarRating(3)"></i>
+              <i class="fa-solid fa-star star" data-value="4" onclick="setStarRating(4)"></i>
+              <i class="fa-solid fa-star star" data-value="5" onclick="setStarRating(5)"></i>
             </div>
           </div>
 
@@ -1058,7 +1036,7 @@
 
           <div class="form-group">
             <label class="form-label">Written Comments / Experience Review</label>
-            <textarea id="feedbackComments" class="form-control" rows="2" placeholder="Write your review...">Nurse Sarah was exceptionally gentle and professional. Vitals taken accurately.</textarea>
+            <textarea id="feedbackComments" class="form-control" rows="2" placeholder="Write your review..."></textarea>
           </div>
 
           <div class="form-group" style="margin-top:1.25rem;">
