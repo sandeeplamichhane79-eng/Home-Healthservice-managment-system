@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    Home Healthcare Management System - Core Stylesheet
    Modern, responsive, accessible, animated healthcare UI
    ========================================================= */
@@ -68,6 +68,14 @@ body {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+}
+
+body.app-locked .demo-role-bar,
+body.app-locked .navbar,
+body.app-locked .workflow-section,
+body.app-locked main.container,
+body.patient-session .demo-role-bar {
+  display: none !important;
 }
 
 /* Keep the hospital scene present but subtle behind the working area. */

@@ -18,75 +18,96 @@
   <link rel="stylesheet" href="/static/css/animations.css">
   <link rel="stylesheet" href="/static/css/doctor_animation.css">
 </head>
-<body>
+<body class="app-locked">
 
   <!-- Top Quick Demo Role Switcher Bar -->
   <aside class="demo-role-bar">
     <div class="demo-title">
       <i class="fa-solid fa-arrows-spin animate-spin" style="animation-duration: 4s;"></i>
-      <span>QUICK ROLE ACCESS (1-CLICK TEST):</span>
+      <span data-i18n data-en="QUICK ROLE ACCESS (1-CLICK TEST):" data-ne="छिटो भूमिका पहुँच (एक क्लिक परीक्षण):">QUICK ROLE ACCESS (1-CLICK TEST):</span>
     </div>
     <div class="role-chips">
-      <button class="role-chip-btn active" data-role="patient" onclick="switchDemoRole('patient')" title="Switch to Patient John Doe">
-        <i class="fa-solid fa-user"></i> Patient (John Doe)
+      <button class="role-chip-btn active" data-role="patient" onclick="switchDemoRole('patient')" title="Switch to Patient">
+        <i class="fa-solid fa-user"></i> <span data-i18n data-en="Patient" data-ne="बिरामी">Patient</span>
       </button>
-      <button class="role-chip-btn" data-role="admin" onclick="switchDemoRole('admin')" title="Switch to Admin Dr. Vance">
-        <i class="fa-solid fa-shield-halved"></i> Admin (Dr. Vance)
+      <button class="role-chip-btn" data-role="admin" onclick="switchDemoRole('admin')" title="Switch to Admin">
+        <i class="fa-solid fa-shield-halved"></i> <span data-i18n data-en="Admin" data-ne="प्रशासन">Admin</span>
       </button>
-      <button class="role-chip-btn" data-role="nurse" onclick="switchDemoRole('nurse')" title="Switch to Nurse Sarah">
-        <i class="fa-solid fa-user-nurse"></i> Nurse (Sarah, RN)
+      <button class="role-chip-btn" data-role="nurse" onclick="switchDemoRole('nurse')" title="Switch to Nurse Rama">
+        <i class="fa-solid fa-user-nurse"></i> <span data-i18n data-en="Nurse (Rama)" data-ne="नर्स (राम)">Nurse (Rama)</span>
       </button>
-      <button class="role-chip-btn" data-role="doctor" onclick="switchDemoRole('doctor')" title="Switch to Doctor Dr. Wilson">
-        <i class="fa-solid fa-user-doctor"></i> Doctor (Dr. Wilson)
+      <button class="role-chip-btn" data-role="nurse_chetna" onclick="switchDemoRole('nurse_chetna')" title="Switch to Nurse Chetna">
+        <i class="fa-solid fa-user-nurse"></i> <span data-i18n data-en="Nurse (Chetna)" data-ne="नर्स (चेतना)">Nurse (Chetna)</span>
       </button>
-      <button class="role-chip-btn" data-role="therapist" onclick="switchDemoRole('therapist')" title="Switch to Therapist Elena">
-        <i class="fa-solid fa-person-walking"></i> Therapist (Elena)
+      <button class="role-chip-btn" data-role="doctor" onclick="switchDemoRole('doctor')" title="Switch to Doctor Binod Thapa">
+        <i class="fa-solid fa-user-doctor"></i> <span data-i18n data-en="Doctor (Binod Thapa)" data-ne="डाक्टर (विनोद थापा)">Doctor (Binod Thapa)</span>
+      </button>
+      <button class="role-chip-btn" data-role="doctor_sunil" onclick="switchDemoRole('doctor_sunil')" title="Switch to Doctor Sunil">
+        <i class="fa-solid fa-user-doctor"></i> <span data-i18n data-en="Doctor (Sunil)" data-ne="डाक्टर (सुनिल)">Doctor (Sunil)</span>
+      </button>
+      <button class="role-chip-btn" data-role="doctor_sahil" onclick="switchDemoRole('doctor_sahil')" title="Switch to Doctor Sahil">
+        <i class="fa-solid fa-user-doctor"></i> <span data-i18n data-en="Doctor (Sahil)" data-ne="डाक्टर (साहिल)">Doctor (Sahil)</span>
+      </button>
+      <button class="role-chip-btn" data-role="therapist" onclick="switchDemoRole('therapist')" title="Switch to Therapist">
+        <i class="fa-solid fa-person-walking"></i> <span data-i18n data-en="Therapist" data-ne="थेरापिस्ट">Therapist</span>
+      </button>
+      <button class="role-chip-btn" data-role="pharmacist" onclick="switchDemoRole('pharmacist')" title="Switch to Pharmacist">
+        <i class="fa-solid fa-pills"></i> <span data-i18n data-en="Pharmacist" data-ne="फार्मासिस्ट">Pharmacist</span>
       </button>
       <button class="role-chip-btn" data-role="login" onclick="openLoginModal()" style="background:#0284c7; color:white; border-color:#38bdf8;">
-        <i class="fa-solid fa-key"></i> ID/Password Login
+        <i class="fa-solid fa-key"></i> <span data-i18n data-en="ID/Password Login" data-ne="ID/पासवर्ड लगइन">ID/Password Login</span>
       </button>
     </div>
   </aside>
 
-  <!-- Main Navbar with National Emblem Logo -->
   <header class="navbar">
     <div class="container nav-wrapper">
-      <a href="#" class="brand-logo" onclick="switchTab('services')" style="text-decoration:none;">
-        <img src="/static/images/nepal_emblem_logo.png" alt="National Emblem Logo" class="emblem-logo">
-        <div class="gov-branding-text">
-          <span class="gov-title-np">नेपाल सरकार | स्वास्थ्य तथा जनसङ्ख्या मन्त्रालय</span>
-          <span class="gov-title-en">Home Healthcare System</span>
-          <span class="gov-subtitle"><i class="fa-solid fa-circle-check"></i> Certified Bedside Clinical Care</span>
+      <div class="masthead-service-info" style="display:flex; flex-direction:column; gap:0.2rem; margin-right:auto;">
+        <strong data-i18n data-en="Home Service Healthcare Management System" data-ne="घर सेवा स्वास्थ्य व्यवस्थापन प्रणाली">Home Service Healthcare Management System</strong>
+        <strong data-i18n data-en="Safe and Reliable Care" data-ne="सुरक्षित र भरपर्दो सेवा">Safe and Reliable Care</strong>
+        <div class="masthead-contact">
+          <span>Phone: +977 9829691414</span>
+          <span>Email: healthcare123@gmail.com</span>
         </div>
-      </a>
+      </div>
+
+      <div class="language-switcher" aria-label="Language selection" style="margin-left:auto;">
+        <span class="language-label" data-i18n data-en="Language" data-ne="भाषा">Language</span>
+        <button type="button" class="language-option active" data-language="en" onclick="setLanguage('en')">English</button>
+        <span class="language-divider">|</span>
+        <button type="button" class="language-option" data-language="ne" onclick="setLanguage('ne')">नेपाली</button>
+      </div>
 
       <nav class="nav-links">
         <button class="nav-btn active" id="navBtnServices" data-tab="services" onclick="switchTab('services')">
-          <i class="fa-solid fa-hand-holding-medical"></i> Services Catalog
+          <i class="fa-solid fa-hand-holding-medical"></i> <span data-i18n data-en="Services Catalog" data-ne="सेवा सूची">Services Catalog</span>
         </button>
         <button class="nav-btn" id="navBtnRecords" data-tab="records" onclick="switchTab('records')">
-          <i class="fa-solid fa-folder-medical"></i> My Health Vault & Vitals
+          <i class="fa-solid fa-folder-medical"></i> <span data-i18n data-en="My Health Vault & Vitals" data-ne="मेरो स्वास्थ्य विवरण">My Health Vault & Vitals</span>
         </button>
         <button class="nav-btn" id="navBtnProfessional" data-tab="professional" onclick="switchTab('professional')">
-          <i class="fa-solid fa-stethoscope"></i> Clinician Visit Console
+          <i class="fa-solid fa-stethoscope"></i> <span id="staffNavLabel" data-i18n data-en="Staff Dashboard" data-ne="कर्मचारी ड्यासबोर्ड">Staff Dashboard</span>
         </button>
         <button class="nav-btn" id="navBtnAdmin" data-tab="admin" onclick="switchTab('admin')">
-          <i class="fa-solid fa-chart-line"></i> Admin Dispatch & Resolution
+          <i class="fa-solid fa-chart-line"></i> <span data-i18n data-en="Admin Dispatch & Resolution" data-ne="प्रशासनिक व्यवस्थापन">Admin Dispatch & Resolution</span>
         </button>
       </nav>
 
       <div style="display:flex; align-items:center; gap:0.5rem;">
-        <div class="user-badge-menu" id="userBadgeSection" onclick="openLoginModal()" style="cursor:pointer;" title="Click to view or switch user credentials">
+        <div class="user-badge-menu" id="userBadgeSection" onclick="handleUserBadgeClick()" style="cursor:pointer;" title="Click to view My Profile">
           <img id="headerUserAvatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" alt="Avatar" class="user-avatar-mini">
           <div class="user-info-text">
             <span id="headerUserName" class="user-info-name">John Doe</span>
             <span id="headerUserRole" class="user-info-role">PATIENT</span>
           </div>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="openLoginModal()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Sign In with ID and Password">
+        <button class="btn btn-outline btn-sm" id="headerLoginBtn" onclick="openLoginModal()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Sign In with ID and Password">
           <i class="fa-solid fa-right-to-bracket"></i> Login
         </button>
-        <button class="btn btn-sm btn-danger" onclick="logoutUser()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Logout">
+        <button class="btn btn-primary btn-sm" id="headerRegisterBtn" onclick="openRegisterModal()" style="font-size:0.75rem; padding:0.4rem 0.6rem; background:#10b981; border-color:#10b981;" title="New Patient Registration">
+          <i class="fa-solid fa-user-plus"></i> Register
+        </button>
+        <button class="btn btn-sm btn-danger" id="headerLogoutBtn" onclick="logoutUser()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Logout">
           <i class="fa-solid fa-power-off"></i>
         </button>
       </div>
@@ -433,10 +454,11 @@
     <section id="view-professional" class="dashboard-view">
       <div class="section-title-bar">
         <div>
-          <h2 class="section-title"><i class="fa-solid fa-user-nurse" style="color:var(--primary);"></i> Assigned Home Visits Itinerary</h2>
-          <p style="font-size:0.875rem; color:var(--text-muted);">Step 5 & 6: Check-in to patient visits, record bedside vitals, and issue digital prescriptions.</p>
+          <h2 class="section-title" id="staffDashboardTitle"><i class="fa-solid fa-user-nurse" style="color:var(--primary);"></i> Staff Dashboard</h2>
+          <p id="staffDashboardDescription" style="font-size:0.875rem; color:var(--text-muted);">Manage your assigned home visits and patient care tasks.</p>
         </div>
       </div>
+      <div id="staffDashboardIntro" class="staff-dashboard-intro"></div>
       <div id="proAppointmentsContainer"></div>
     </section>
 
@@ -463,7 +485,7 @@
           <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Completed Visits</div>
         </div>
         <div class="card-panel" style="text-align:center;">
-          <div id="adminStatRevenue" style="font-size:1.8rem; font-weight:800; color:var(--primary);">$0.00</div>
+          <div id="adminStatRevenue" style="font-size:1.8rem; font-weight:800; color:var(--primary);">रु 0.00</div>
           <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Revenue</div>
         </div>
         <div class="card-panel" style="text-align:center;">
@@ -508,8 +530,7 @@
   <!-- 1. Dedicated Authentication / Login & Register Modal (Step 1) -->
   <div id="authModal" class="modal-backdrop">
     <div class="modal-box" style="max-width:540px;">
-      <div class="login-header-banner">
-        <img src="/static/images/nepal_emblem_logo.png" alt="Emblem" class="emblem-logo">
+      <div class="login-header-banner" style="padding-top:1.25rem; padding-bottom:1rem;">
         <h3 style="font-size:1.3rem; font-weight:800; margin:0;">National Healthcare Portal</h3>
         <div style="font-size:0.8rem; color:#a7f3d0; margin-top:0.25rem;">Sign in to your dedicated Patient, Staff, or Admin portal</div>
         <button class="modal-close-btn" onclick="closeModal('authModal')" style="position:absolute; top:12px; right:12px; color:white;"><i class="fa-solid fa-xmark"></i></button>
@@ -527,17 +548,46 @@
       <div class="modal-body" style="padding:1.5rem;">
         <div id="loginFormSection">
           <form onsubmit="handleLoginSubmit(event)">
+            <div class="role-login-grid" aria-label="Choose your portal">
+              <button type="button" class="role-login-card active" data-login-role="patient" onclick="selectRoleLogin('patient', 'patient@demo.com', 'ram123')"><i class="fa-solid fa-user"></i><span>Patient</span></button>
+              <button type="button" class="role-login-card" data-login-role="doctor" onclick="selectRoleLogin('doctor', 'dr.binod@demo.com', 'doctor123')"><i class="fa-solid fa-user-doctor"></i><span>Doctor</span></button>
+              <button type="button" class="role-login-card" data-login-role="nurse" onclick="selectRoleLogin('nurse', 'nurse.rama@demo.com', 'nurse123')"><i class="fa-solid fa-user-nurse"></i><span>Nurse</span></button>
+              <button type="button" class="role-login-card" data-login-role="admin" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></button>
+              <button type="button" class="role-login-card" data-login-role="therapist" onclick="selectRoleLogin('therapist', 'therapist.asha@demo.com', 'therapist123')"><i class="fa-solid fa-person-walking"></i><span>Therapist</span></button>
+              <button type="button" class="role-login-card" data-login-role="pharmacist" onclick="selectRoleLogin('pharmacist', 'pharm@demo.com', 'pharm123')"><i class="fa-solid fa-pills"></i><span>Pharmacist</span></button>
+            </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address / Username *</label>
-              <input type="email" id="loginEmail" class="form-control" placeholder="Enter your registered email" value="patient@demo.com" required>
+              <input type="email" id="loginEmail" class="form-control" placeholder="Enter your registered email" value="" required>
             </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-lock"></i> Password *</label>
-              <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" value="demo123" required>
+              <div class="password-input-wrap">
+                <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" value="" required>
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Show password" title="Show password"><i class="fa-solid fa-eye"></i></button>
+              </div>
+            </div>
+            <div class="form-group" id="staffPinGroup" style="display:none; background:#f0f9ff; border:1px solid #bae6fd; border-radius:var(--radius-md); padding:0.75rem 1rem; margin-top:0.75rem;">
+              <label class="form-label" style="color:#0369a1; font-weight:700; display:flex; align-items:center; justify-content:space-between;">
+                <span><i class="fa-solid fa-shield-halved"></i> Hospital Authorization PIN (Staff Security Code) *</span>
+                <span class="badge" style="background:#0284c7; color:white; font-size:0.65rem; padding:0.15rem 0.45rem;">Hospital Clearance</span>
+              </label>
+              <div class="password-input-wrap" style="margin-top:0.25rem;">
+                <input type="password" id="loginStaffPin" class="form-control" placeholder="Enter Hospital Authorization PIN" maxlength="10" style="border-color:#38bdf8; background:#ffffff;">
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginStaffPin', this)" aria-label="Show PIN" title="Show PIN"><i class="fa-solid fa-eye"></i></button>
+              </div>
+              <div style="font-size:0.75rem; color:#0284c7; margin-top:0.35rem; display:flex; align-items:center; gap:0.4rem;">
+                <i class="fa-solid fa-lock"></i> <span>Restricted: Access limited to verified hospital clinical staff and administrators.</span>
+              </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem;">
-              <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to My Portal
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; margin-bottom:0.75rem;">
+              <span class="text-muted" style="font-size:0.8rem;">Role-based isolation: each portal displays its dedicated tools.</span>
+              <button type="button" class="btn btn-link btn-sm" onclick="openForgotPasswordModal()" style="padding:0; color:#38bdf8; font-weight:700;">Forgot Password?</button>
+            </div>
+
+            <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem;">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Patient Portal
             </button>
           </form>
 
@@ -545,95 +595,269 @@
             <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.4rem;">
               <i class="fa-solid fa-bolt"></i> Quick-Fill Credentials (Click to fill):
             </div>
-            <div style="display:flex; flex-wrap:wrap;">
-              <span class="preset-chip" onclick="fillLoginCredentials('patient@demo.com', 'demo123')">
-                <i class="fa-solid fa-user"></i> Patient: patient@demo.com
+            <div style="display:flex; flex-wrap:wrap; gap:0.35rem;">
+              <span class="preset-chip" onclick="selectRoleLogin('patient', 'patient@demo.com', 'ram123')">
+                <i class="fa-solid fa-user"></i> Patient
               </span>
-              <span class="preset-chip" onclick="fillLoginCredentials('admin@demo.com', 'admin123')">
-                <i class="fa-solid fa-shield-halved"></i> Admin: admin@demo.com
+              <span class="preset-chip" onclick="selectRoleLogin('doctor', 'dr.binod@demo.com', 'doctor123')">
+                <i class="fa-solid fa-user-doctor"></i> Doctor (Dr. Binod)
               </span>
-              <span class="preset-chip" onclick="fillLoginCredentials('nurse.sarah@demo.com', 'nurse123')">
-                <i class="fa-solid fa-user-nurse"></i> Nurse: nurse.sarah@demo.com
+              <span class="preset-chip" onclick="selectRoleLogin('nurse', 'nurse.rama@demo.com', 'nurse123')">
+                <i class="fa-solid fa-user-nurse"></i> Nurse (Rama)
               </span>
-              <span class="preset-chip" onclick="fillLoginCredentials('dr.james@demo.com', 'doctor123')">
-                <i class="fa-solid fa-user-doctor"></i> Doctor: dr.james@demo.com
+              <span class="preset-chip" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')">
+                <i class="fa-solid fa-shield-halved"></i> Admin (Sandeep)
               </span>
-              <span class="preset-chip" onclick="fillLoginCredentials('pt.elena@demo.com', 'therapist123')">
-                <i class="fa-solid fa-person-walking"></i> Therapist: pt.elena@demo.com
+              <span class="preset-chip" onclick="selectRoleLogin('therapist', 'therapist.asha@demo.com', 'therapist123')">
+                <i class="fa-solid fa-person-walking"></i> Therapist
+              </span>
+              <span class="preset-chip" onclick="selectRoleLogin('pharmacist', 'pharm@demo.com', 'pharm123')">
+                <i class="fa-solid fa-pills"></i> Pharmacist
               </span>
             </div>
+          </div>
+
+          <div style="margin-top:1rem; padding:0.85rem; background:#f0fdf4; border:1px dashed #86efac; border-radius:var(--radius-md); text-align:center;">
+            <div style="font-size:0.85rem; color:#166534; font-weight:700; margin-bottom:0.4rem;">
+              <i class="fa-solid fa-user-plus"></i> New Patient? Don't have an ID yet?
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="switchAuthTab('register')" style="width:100%; font-weight:700; background:#059669; border-color:#059669;">
+              <i class="fa-solid fa-user-plus"></i> Click Here to Register as New Patient (नयाँ बिरामी दर्ता)
+            </button>
           </div>
         </div>
 
         <div id="registerFormSection" style="display:none;">
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:0.75rem 1rem; margin-bottom:1.15rem; font-size:0.825rem; color:#166534; display:flex; align-items:center; gap:0.5rem;">
+            <i class="fa-solid fa-id-card-clip" style="font-size:1.25rem; color:#059669;"></i>
+            <span><strong>New Patient Registration (नयाँ बिरामी दर्ता):</strong> Create your personal profile to book home visits, view medical records, and track vitals securely.</span>
+          </div>
+
           <form onsubmit="handleRegisterSubmit(event)">
+            <input type="hidden" id="regRole" value="patient">
+
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Full Name *</label>
-                <input type="text" id="regName" class="form-control" placeholder="e.g. Ramesh Sharma" required>
+                <label class="form-label"><i class="fa-solid fa-user"></i> Full Name *</label>
+                <input type="text" id="regName" class="form-control" placeholder="e.g. Ram Kumar Shrestha" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Email Address *</label>
-                <input type="email" id="regEmail" class="form-control" placeholder="e.g. ramesh@example.com" required>
+                <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address *</label>
+                <input type="email" id="regEmail" class="form-control" placeholder="e.g. ram@example.com" required>
               </div>
             </div>
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Password *</label>
-                <input type="password" id="regPassword" class="form-control" placeholder="Create password" required>
+                <label class="form-label"><i class="fa-solid fa-lock"></i> Password *</label>
+                <div class="password-input-wrap">
+                  <input type="password" id="regPassword" class="form-control" placeholder="Create password (min 6 chars)" required>
+                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('regPassword', this)" aria-label="Show password" title="Show password"><i class="fa-solid fa-eye"></i></button>
+                </div>
               </div>
               <div class="form-group">
-                <label class="form-label">Phone Number *</label>
+                <label class="form-label"><i class="fa-solid fa-phone"></i> Phone Number *</label>
                 <input type="text" id="regPhone" class="form-control" placeholder="+977 98XXXXXXXX" required>
               </div>
             </div>
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Age</label>
-                <input type="number" id="regAge" class="form-control" value="35">
+                <label class="form-label"><i class="fa-solid fa-cake-candles"></i> Age</label>
+                <input type="number" id="regAge" class="form-control" placeholder="e.g. 35" value="35" min="1" max="120">
               </div>
               <div class="form-group">
-                <label class="form-label">Gender</label>
+                <label class="form-label"><i class="fa-solid fa-venus-mars"></i> Gender</label>
                 <select id="regGender" class="form-control">
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="Male">Male (पुरुष)</option>
+                  <option value="Female">Female (महिला)</option>
+                  <option value="Other">Other (अन्य)</option>
                 </select>
               </div>
             </div>
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Blood Group</label>
+                <label class="form-label"><i class="fa-solid fa-droplet"></i> Blood Group</label>
                 <select id="regBloodGroup" class="form-control">
                   <option value="O+">O+</option>
                   <option value="A+">A+</option>
                   <option value="B+">B+</option>
                   <option value="AB+">AB+</option>
                   <option value="O-">O-</option>
+                  <option value="A-">A-</option>
+                  <option value="B-">B-</option>
+                  <option value="AB-">AB-</option>
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Account Role</label>
-                <select id="regRole" class="form-control">
-                  <option value="patient">Patient</option>
-                  <option value="professional">Healthcare Professional</option>
-                </select>
+                <label class="form-label"><i class="fa-solid fa-user-shield"></i> Profile Type</label>
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:var(--radius-md); padding:0.55rem 0.75rem; font-size:0.85rem; font-weight:700; color:#059669; display:flex; align-items:center; gap:0.4rem; height:42px;">
+                  <i class="fa-solid fa-check-circle"></i> Patient Profile (Strictly Private)
+                </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Home Address</label>
-              <input type="text" id="regAddress" class="form-control" placeholder="Enter municipality, ward no., city">
+              <label class="form-label"><i class="fa-solid fa-location-dot"></i> Home Address</label>
+              <input type="text" id="regAddress" class="form-control" placeholder="e.g. Kathmandu-3, Lazimpat">
             </div>
 
-            <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
-              <i class="fa-solid fa-user-check"></i> Register Account & Sign In
+            <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem; background:linear-gradient(135deg, #059669, #10b981); border:none;">
+              <i class="fa-solid fa-user-plus"></i> Register Patient Account & Sign In
             </button>
+
+            <div style="text-align:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid #e2e8f0;">
+              <span style="font-size:0.85rem; color:#64748b;">Already have an account?</span>
+              <button type="button" class="btn btn-link btn-sm" onclick="switchAuthTab('login')" style="color:#0284c7; font-weight:700; text-decoration:underline;">
+                Sign In to My Portal
+              </button>
+            </div>
           </form>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="forgotPasswordModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-key" style="color:var(--primary);"></i> Forgot Password</h3>
+        <button class="modal-close-btn" onclick="closeModal('forgotPasswordModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="handleForgotPasswordSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Registered email or phone number</label>
+            <input type="text" id="forgotPasswordIdentifier" class="form-control" placeholder="Enter your email or phone" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-paper-plane"></i> Send Verification Code</button>
+        </form>
+
+        <form onsubmit="handleResetPasswordSubmit(event)" style="margin-top:1rem;">
+          <div class="form-group">
+            <label class="form-label">Verification code (OTP)</label>
+            <input type="text" id="forgotPasswordOtp" class="form-control" placeholder="Enter 6-digit OTP" maxlength="6" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" id="forgotPasswordNew" class="form-control" placeholder="Create a strong password" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" id="forgotPasswordConfirm" class="form-control" placeholder="Re-enter new password" required>
+          </div>
+          <button type="submit" class="btn btn-success" style="width:100%;"><i class="fa-solid fa-check"></i> Reset Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="changePasswordModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-user-lock" style="color:var(--primary);"></i> Change Password</h3>
+        <button class="modal-close-btn" onclick="closeModal('changePasswordModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="handleChangePasswordSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Current Password</label>
+            <input type="password" id="currentPassword" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" id="newPassword" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password</label>
+            <input type="password" id="confirmPassword" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-shield-halved"></i> Update Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Patient Profile Modal -->
+  <div id="patientProfileModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:540px;">
+      <div class="modal-header" style="background:linear-gradient(135deg, #065f46 0%, #0f172a 100%); color:white; border-radius:var(--radius-lg) var(--radius-lg) 0 0; padding:1.25rem 1.5rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+            <i class="fa-solid fa-id-card-clip" style="color:#34d399;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="color:white; margin:0; font-size:1.15rem;">My Patient Profile</h3>
+            <div style="font-size:0.75rem; color:#a7f3d0;">Patient ID: <strong id="profileUserIdDisplay">#PAT</strong> (Private Record)</div>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('patientProfileModal')" style="color:white;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body" style="padding:1.5rem;">
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#166534; display:flex; align-items:center; gap:0.5rem;">
+          <i class="fa-solid fa-shield-halved" style="font-size:1.1rem; color:#059669;"></i>
+          <span><strong>Strict Privacy Protection:</strong> You are accessing your isolated personal patient profile. Healthcare staff and other user profiles cannot be viewed from this account.</span>
+        </div>
+
+        <form onsubmit="handlePatientProfileSubmit(event)">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" id="profileName" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Registered Email (Read-Only)</label>
+              <input type="email" id="profileEmail" class="form-control" readonly style="background:#f1f5f9; cursor:not-allowed;">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="text" id="profilePhone" class="form-control" placeholder="+977 98XXXXXXXX">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Age</label>
+              <input type="number" id="profileAge" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select id="profileGender" class="form-control">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Blood Group</label>
+              <select id="profileBloodGroup" class="form-control">
+                <option value="O+">O+</option>
+                <option value="A+">A+</option>
+                <option value="B+">B+</option>
+                <option value="AB+">AB+</option>
+                <option value="O-">O-</option>
+                <option value="A-">A-</option>
+                <option value="B-">B-</option>
+                <option value="AB-">AB-</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Home Address</label>
+            <input type="text" id="profileAddress" class="form-control" placeholder="Municipality, Ward, City">
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('patientProfileModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Profile Changes</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -656,7 +880,7 @@
               <div id="bookingServiceTitle" style="font-size:1.1rem; font-weight:800; color:var(--dark);">Skilled Nursing Care</div>
               <div style="font-size:0.8rem; color:var(--text-muted);"><i class="fa-regular fa-clock"></i> <span id="bookingServiceDuration">60 mins</span></div>
             </div>
-            <div id="bookingServicePrice" style="font-size:1.4rem; font-weight:800; color:var(--primary);">$65.00</div>
+            <div id="bookingServicePrice" style="font-size:1.4rem; font-weight:800; color:var(--primary);">रु 65.00</div>
           </div>
 
           <div class="form-grid-2">
@@ -859,19 +1083,19 @@
         <div style="background:#f8fafc; border-radius:var(--radius-md); padding:1rem; margin-bottom:1.25rem;">
           <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem; font-size:0.875rem;">
             <span><strong id="payServiceTitle">Skilled Nursing Care</strong></span>
-            <span id="payBasePrice">$65.00</span>
+            <span id="payBasePrice">रु 65.00</span>
           </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem; font-size:0.85rem; color:var(--text-muted);">
             <span>Consumables & PPE Kit</span>
-            <span id="payConsumables">$15.00</span>
+            <span id="payConsumables">रु 15.00</span>
           </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.85rem; color:var(--text-muted);">
             <span>Healthcare Service Tax (5%)</span>
-            <span id="payTax">$4.00</span>
+            <span id="payTax">रु 4.00</span>
           </div>
           <div style="display:flex; justify-content:space-between; border-top:1px solid var(--border); padding-top:0.5rem; font-size:1.1rem; font-weight:800;">
             <span>Total Payable</span>
-            <span id="payTotalAmount" style="color:var(--primary);">$84.00</span>
+            <span id="payTotalAmount" style="color:var(--primary);">रु 84.00</span>
           </div>
         </div>
 
@@ -929,7 +1153,7 @@
 
           <div id="payCashSection" style="display:none;">
             <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:1.25rem; text-align:center;">
-              <i class="fa-solid fa-hand-holding-dollar" style="font-size:2rem; color:var(--primary); margin-bottom:0.5rem; display:block;"></i>
+              <i class="fa-solid fa-money-bill-transfer" style="font-size:2rem; color:var(--primary); margin-bottom:0.5rem; display:block;"></i>
               <div style="font-weight:800; font-size:1rem; color:#166534;">Pay by Cash After Home Visit</div>
               <div style="font-size:0.8rem; color:#15803d; margin-top:0.25rem;">Hand over exact cash to attending healthcare staff. Digital receipt will be generated.</div>
             </div>
@@ -986,11 +1210,11 @@
           <div style="text-align:center;">
             <div style="font-weight:700; font-size:0.95rem; margin-bottom:0.5rem;">Rate Attending Healthcare Professional</div>
             <div id="starRatingContainer" class="star-rating-box">
-              <i class="fa-solid fa-star star active" data-value="1" onclick="setStarRating(1)"></i>
-              <i class="fa-solid fa-star star active" data-value="2" onclick="setStarRating(2)"></i>
-              <i class="fa-solid fa-star star active" data-value="3" onclick="setStarRating(3)"></i>
-              <i class="fa-solid fa-star star active" data-value="4" onclick="setStarRating(4)"></i>
-              <i class="fa-solid fa-star star active" data-value="5" onclick="setStarRating(5)"></i>
+              <i class="fa-solid fa-star star" data-value="1" onclick="setStarRating(1)"></i>
+              <i class="fa-solid fa-star star" data-value="2" onclick="setStarRating(2)"></i>
+              <i class="fa-solid fa-star star" data-value="3" onclick="setStarRating(3)"></i>
+              <i class="fa-solid fa-star star" data-value="4" onclick="setStarRating(4)"></i>
+              <i class="fa-solid fa-star star" data-value="5" onclick="setStarRating(5)"></i>
             </div>
           </div>
 
@@ -1001,7 +1225,7 @@
 
           <div class="form-group">
             <label class="form-label">Written Comments / Experience Review</label>
-            <textarea id="feedbackComments" class="form-control" rows="2" placeholder="Write your review...">Nurse Sarah was exceptionally gentle and professional. Vitals taken accurately.</textarea>
+            <textarea id="feedbackComments" class="form-control" rows="2" placeholder="Write your review..."></textarea>
           </div>
 
           <div class="form-group" style="margin-top:1.25rem;">

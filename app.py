@@ -6,13 +6,21 @@ Provides RESTful APIs and UI routing for the 9-step home healthcare workflow.
 import os
 import json
 import uuid
-from datetime import datetime
+import re
+import secrets
+import string
+import hashlib
+from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, render_template, session, send_from_directory
-from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db_connection, init_db
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "local-development-secret-key")
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 default_upload_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
 if os.environ.get("VERCEL"):
@@ -24,8 +32,100 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload
 
 ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx"}
 
+@app.after_request
+def add_security_headers(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+@app.before_request
+def enforce_session_security():
+    if request.path.startswith("/static/") or request.path.startswith("/uploads/"):
+        return None
+    public_routes = {
+        "index", "uploaded_file", "login", "register",
+        "forgot_password", "reset_password", "logout",
+        "demo_switch", "current_user", "get_services", "get_professionals", "upload_document"
+    }
+    if request.endpoint in public_routes:
+        if request.endpoint in {"login", "register", "forgot_password", "reset_password"}:
+            return None
+        if request.endpoint == "current_user" and not session.get("user_id"):
+            return jsonify({"success": False, "user": None})
+        return None
+
+    if not session.get("user_id"):
+        return jsonify({"success": False, "message": "Access Denied"}), 401
+
+    last_activity = session.get("last_activity")
+    if last_activity is not None:
+        try:
+            last_activity = float(last_activity)
+            if (datetime.now().timestamp() - last_activity) > app.config["PERMANENT_SESSION_LIFETIME"].total_seconds():
+                session.clear()
+                return jsonify({"success": False, "message": "Session expired. Please log in again."}), 401
+        except (TypeError, ValueError):
+            session.clear()
+            return jsonify({"success": False, "message": "Session expired. Please log in again."}), 401
+
+    session["last_activity"] = datetime.now().timestamp()
+    return None
+
+
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def password_meets_policy(password):
+    return (
+        isinstance(password, str) and
+        len(password) >= 6 and
+        re.search(r"[A-Za-z]", password) and
+        re.search(r"\d", password)
+    )
+
+
+def hash_password(password):
+    return generate_password_hash(password)
+
+
+def verify_password(password, stored_hash):
+    return check_password_hash(stored_hash, password)
+
+
+def get_user_by_identifier(identifier):
+    if not identifier:
+        return None
+    value = identifier.strip().lower()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(phone) = ?", (value, value))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def require_patient_ownership(patient_id):
+    if session.get("role") != "patient":
+        return True
+    if patient_id != session.get("user_id"):
+        return False
+    return True
+
+
+def ensure_appointment_belongs_to_current_patient(app_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT patient_id FROM appointments WHERE id = ?", (app_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return False, None
+    patient_id = row["patient_id"]
+    if session.get("role") == "patient" and patient_id != session.get("user_id"):
+        return False, patient_id
+    return True, patient_id
 
 # ==========================================
 # 0. UI Page Route
@@ -58,6 +158,8 @@ def register():
 
     if not name or not email or not password:
         return jsonify({"success": False, "message": "Name, email, and password are required."}), 400
+    if not password_meets_policy(password):
+        return jsonify({"success": False, "message": "Password must be at least 8 characters and include uppercase, lowercase, number, and special character."}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -70,13 +172,15 @@ def register():
         cursor.execute("""
         INSERT INTO users (name, email, password, role, phone, age, gender, blood_group, address, specialization, qualification)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (name, email, password, role, phone, age, gender, blood_group, address, specialization, qualification))
+        """, (name, email, hash_password(password), role, phone, age, gender, blood_group, address, specialization, qualification))
         conn.commit()
         user_id = cursor.lastrowid
         conn.close()
 
+        session.clear()
         session["user_id"] = user_id
         session["role"] = role
+        session["last_activity"] = datetime.now().timestamp()
 
         return jsonify({
             "success": True,
@@ -103,9 +207,12 @@ def login():
     email = data.get("email", "").strip().lower()
     password = data.get("password", "").strip()
 
+    if not email or not password:
+        return jsonify({"success": False, "message": "Email and password are required."}), 400
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = ? AND password = ?", (email, password))
+    cursor.execute("SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(phone) = ?", (email, email))
     row = cursor.fetchone()
     conn.close()
 
@@ -113,15 +220,41 @@ def login():
         return jsonify({"success": False, "message": "Invalid email or password."}), 401
 
     user = dict(row)
-    del user["password"]
+    stored_hash = user.get("password", "")
+    password_valid = False
+    if stored_hash.startswith("pbkdf2:") or stored_hash.startswith("scrypt:") or stored_hash.startswith("argon2") or stored_hash.startswith("sha256"):
+        password_valid = verify_password(password, stored_hash)
+    else:
+        password_valid = (stored_hash == password)
+        if password_valid:
+            cursor = get_db_connection().cursor()
+            cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hash_password(password), user["id"]))
+            get_db_connection().commit()
+    if not password_valid:
+        return jsonify({"success": False, "message": "Invalid email or password."}), 401
+
+    # Security Check: Require Hospital Authorization PIN (Staff Security Code) for Doctor, Nurse, Admin, Therapist, Pharmacist
+    if user.get("role") != "patient":
+        staff_pin = str(data.get("staff_pin", "")).strip()
+        if staff_pin != "2026":
+            return jsonify({
+                "success": False,
+                "message": "Hospital Clearance Required: Access to Doctor, Nurse, or Admin portals requires a valid Hospital Authorization PIN."
+            }), 403
+
+    session.clear()
     session["user_id"] = user["id"]
     session["role"] = user["role"]
+    session["last_activity"] = datetime.now().timestamp()
+    del user["password"]
 
     return jsonify({"success": True, "message": "Login successful!", "user": user})
 
 @app.route("/api/auth/me", methods=["GET"])
 def current_user():
-    user_id = session.get("user_id", 1)  # Default demo patient if not set
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "user": None})
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
@@ -135,11 +268,176 @@ def current_user():
     del user["password"]
     return jsonify({"success": True, "user": user})
 
+@app.route("/api/patient/profile", methods=["GET"])
+def get_patient_profile():
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "patient":
+        return jsonify({"success": False, "message": "Access Denied: Patient access only."}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, email, role, phone, age, gender, blood_group, address, avatar, created_at FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"success": False, "message": "Profile not found."}), 404
+
+    return jsonify({"success": True, "profile": dict(row)})
+
+@app.route("/api/patient/profile", methods=["POST"])
+def update_patient_profile():
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "patient":
+        return jsonify({"success": False, "message": "Access Denied: Patient access only."}), 403
+
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    age = data.get("age")
+    gender = data.get("gender") or "Other"
+    blood_group = data.get("blood_group") or "O+"
+    address = (data.get("address") or "").strip()
+
+    if not name:
+        return jsonify({"success": False, "message": "Name is required."}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE users
+        SET name = ?, phone = ?, age = ?, gender = ?, blood_group = ?, address = ?
+        WHERE id = ? AND role = 'patient'
+    """, (name, phone, age, gender, blood_group, address, user_id))
+    conn.commit()
+
+    cursor.execute("SELECT id, name, email, role, phone, age, gender, blood_group, address, avatar, created_at FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": "Profile updated successfully.",
+        "user": dict(row)
+    })
+
+@app.route("/api/auth/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json() or {}
+    identifier = (data.get("identifier") or "").strip()
+    if not identifier:
+        return jsonify({"success": False, "message": "Enter your registered email or phone number."}), 400
+
+    user = get_user_by_identifier(identifier)
+    if not user:
+        return jsonify({"success": False, "message": "No account found for that email or phone number."}), 404
+
+    otp = "".join(secrets.choice(string.digits) for _ in range(6))
+    session["recovery_user_id"] = user["id"]
+    session["recovery_otp"] = otp
+    session["recovery_expires_at"] = (datetime.now() + timedelta(minutes=10)).timestamp()
+
+    return jsonify({
+        "success": True,
+        "message": "A verification code has been sent to your registered contact.",
+        "otp": otp,
+        "user_id": user["id"]
+    })
+
+@app.route("/api/auth/reset-password", methods=["POST"])
+def reset_password():
+    data = request.get_json() or {}
+    identifier = (data.get("identifier") or "").strip()
+    otp = (data.get("otp") or "").strip()
+    new_password = (data.get("new_password") or "").strip()
+    confirm_password = (data.get("confirm_password") or "").strip()
+
+    if not identifier or not otp or not new_password or not confirm_password:
+        return jsonify({"success": False, "message": "All fields are required."}), 400
+
+    user = get_user_by_identifier(identifier)
+    if not user:
+        return jsonify({"success": False, "message": "No account found for that email or phone number."}), 404
+
+    if not password_meets_policy(new_password):
+        return jsonify({"success": False, "message": "Password must be at least 8 characters and include uppercase, lowercase, number, and special character."}), 400
+
+    if new_password != confirm_password:
+        return jsonify({"success": False, "message": "Password confirmation does not match."}), 400
+
+    recovery_user_id = session.get("recovery_user_id")
+    recovery_otp = session.get("recovery_otp")
+    expires_at = session.get("recovery_expires_at")
+    if recovery_user_id != user["id"] or recovery_otp != otp:
+        return jsonify({"success": False, "message": "Invalid or expired verification code."}), 400
+    if expires_at and datetime.now().timestamp() > float(expires_at):
+        session.pop("recovery_user_id", None)
+        session.pop("recovery_otp", None)
+        session.pop("recovery_expires_at", None)
+        return jsonify({"success": False, "message": "Verification code has expired. Please request a new one."}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hash_password(new_password), user["id"]))
+    conn.commit()
+    conn.close()
+
+    session.pop("recovery_user_id", None)
+    session.pop("recovery_otp", None)
+    session.pop("recovery_expires_at", None)
+    return jsonify({"success": True, "message": "Password reset successful. Please log in with your new password."})
+
+@app.route("/api/auth/change-password", methods=["POST"])
+def change_password():
+    if session.get("role") != "patient":
+        return jsonify({"success": False, "message": "Access Denied"}), 403
+
+    data = request.get_json() or {}
+    current_password = (data.get("current_password") or "").strip()
+    new_password = (data.get("new_password") or "").strip()
+    confirm_password = (data.get("confirm_password") or "").strip()
+
+    if not current_password or not new_password or not confirm_password:
+        return jsonify({"success": False, "message": "Current password, new password, and confirmation are required."}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM users WHERE id = ?", (session["user_id"],))
+    row = cursor.fetchone()
+    if not row or not verify_password(current_password, row["password"]):
+        conn.close()
+        return jsonify({"success": False, "message": "Current password is incorrect."}), 401
+
+    if not password_meets_policy(new_password):
+        conn.close()
+        return jsonify({"success": False, "message": "Password must be at least 8 characters and include uppercase, lowercase, number, and special character."}), 400
+
+    if new_password != confirm_password:
+        conn.close()
+        return jsonify({"success": False, "message": "Password confirmation does not match."}), 400
+
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hash_password(new_password), session["user_id"]))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "message": "Password changed successfully."})
+
 @app.route("/api/auth/demo-switch", methods=["POST"])
 def demo_switch():
+    if session.get("role") == "patient":
+        return jsonify({"success": False, "message": "Access Denied: Logged-in patients can only access their own profile."}), 403
+
     data = request.get_json() or {}
     target_role = data.get("role", "patient")
-    
+
+    # Security check: Direct switching to staff/admin is strictly prohibited unless already authenticated as staff/admin
+    if target_role != "patient":
+        current_role = session.get("role")
+        if current_role not in ("admin", "professional", "pharmacist"):
+            return jsonify({
+                "success": False,
+                "message": "Access Denied: Direct role switching to staff profiles is restricted. Please sign in with official credentials and Hospital Authorization PIN."
+            }), 403
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -203,6 +501,8 @@ def get_services():
 
 @app.route("/api/professionals", methods=["GET"])
 def get_professionals():
+    if session.get("role") == "patient":
+        return jsonify({"success": False, "message": "Access Denied: Healthcare staff directory is restricted."}), 403
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name, email, phone, specialization, qualification, experience_years, rating, avatar FROM users WHERE role = 'professional'")
@@ -244,10 +544,11 @@ def upload_document():
 # ==========================================
 @app.route("/api/appointments", methods=["GET"])
 def get_appointments():
-    user_id = session.get("user_id", 1)
+    user_id = session.get("user_id")
     role = session.get("role", "patient")
+    if not user_id:
+        return jsonify({"success": False, "message": "Access Denied"}), 401
 
-    # Filter parameter from query
     status_filter = request.args.get("status")
 
     conn = get_db_connection()
@@ -294,10 +595,14 @@ def get_appointments():
 
 @app.route("/api/appointments/<int:app_id>", methods=["GET"])
 def get_appointment_details(app_id):
+    if session.get("role") == "patient":
+        allowed, _ = ensure_appointment_belongs_to_current_patient(app_id)
+        if not allowed:
+            return jsonify({"success": False, "message": "Access Denied"}), 403
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Appointment base
     cursor.execute("""
     SELECT a.*, 
            s.title AS service_title, s.category AS service_category, s.price AS service_price, s.duration AS service_duration, s.icon AS service_icon, s.inclusions AS service_inclusions,
@@ -359,8 +664,11 @@ def get_appointment_details(app_id):
 
 @app.route("/api/appointments", methods=["POST"])
 def create_appointment():
+    if session.get("role") != "patient":
+        return jsonify({"success": False, "message": "Access Denied"}), 403
+
     data = request.get_json() or {}
-    patient_id = session.get("user_id", data.get("patient_id", 1))
+    patient_id = session.get("user_id")
     service_id = data.get("service_id")
     appointment_date = data.get("appointment_date")
     time_slot = data.get("time_slot")
@@ -370,6 +678,8 @@ def create_appointment():
     emergency_contact_phone = data.get("emergency_contact_phone", "")
     uploaded_docs = data.get("uploaded_docs", [])
 
+    if not patient_id:
+        return jsonify({"success": False, "message": "Access Denied"}), 401
     if not service_id or not appointment_date or not time_slot or not address:
         return jsonify({"success": False, "message": "Service, date, time slot, and address are required."}), 400
 
@@ -448,6 +758,9 @@ def start_visit(app_id):
 
 @app.route("/api/appointments/<int:app_id>/complete-service", methods=["POST"])
 def complete_service_records(app_id):
+    if session.get("role") not in {"professional", "pharmacist", "admin"}:
+        return jsonify({"success": False, "message": "Access Denied"}), 403
+
     data = request.get_json() or {}
     user_id = session.get("user_id", 4)
     
@@ -599,7 +912,10 @@ def process_payment(app_id):
 # ==========================================
 @app.route("/api/patient/vitals-history", methods=["GET"])
 def get_vitals_history():
-    user_id = session.get("user_id", 1)
+    if session.get("role") != "patient":
+        return jsonify({"success": False, "message": "Access Denied"}), 403
+
+    user_id = session.get("user_id")
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -622,6 +938,13 @@ def get_vitals_history():
 # ==========================================
 @app.route("/api/appointments/<int:app_id>/feedback", methods=["POST"])
 def submit_feedback(app_id):
+    if session.get("role") != "patient":
+        return jsonify({"success": False, "message": "Access Denied"}), 403
+
+    allowed, _ = ensure_appointment_belongs_to_current_patient(app_id)
+    if not allowed:
+        return jsonify({"success": False, "message": "Access Denied"}), 403
+
     data = request.get_json() or {}
     try:
         rating = int(data.get("rating", 5))
@@ -684,6 +1007,13 @@ def submit_feedback(app_id):
 
 @app.route("/api/appointments/<int:app_id>/issue", methods=["POST"])
 def raise_issue_ticket(app_id):
+    if session.get("role") != "patient":
+        return jsonify({"success": False, "message": "Access Denied"}), 403
+
+    allowed, _ = ensure_appointment_belongs_to_current_patient(app_id)
+    if not allowed:
+        return jsonify({"success": False, "message": "Access Denied"}), 403
+
     data = request.get_json() or {}
     category = data.get("category", "Service Quality")
     description = data.get("description", "").strip()
@@ -728,20 +1058,38 @@ def raise_issue_ticket(app_id):
 def get_issues():
     conn = get_db_connection()
     cursor = conn.cursor()
+    role = session.get("role")
+    user_id = session.get("user_id")
 
-    cursor.execute("""
-    SELECT it.*, 
-           a.appointment_number, a.appointment_date,
-           p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email,
-           s.title AS service_title,
-           pro.name AS professional_name
-    FROM issue_tickets it
-    JOIN appointments a ON it.appointment_id = a.id
-    JOIN users p ON it.patient_id = p.id
-    JOIN services s ON a.service_id = s.id
-    LEFT JOIN users pro ON a.professional_id = pro.id
-    ORDER BY it.id DESC
-    """)
+    if role == "patient":
+        cursor.execute("""
+        SELECT it.*, 
+               a.appointment_number, a.appointment_date,
+               p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email,
+               s.title AS service_title,
+               pro.name AS professional_name
+        FROM issue_tickets it
+        JOIN appointments a ON it.appointment_id = a.id
+        JOIN users p ON it.patient_id = p.id
+        JOIN services s ON a.service_id = s.id
+        LEFT JOIN users pro ON a.professional_id = pro.id
+        WHERE it.patient_id = ?
+        ORDER BY it.id DESC
+        """, (user_id,))
+    else:
+        cursor.execute("""
+        SELECT it.*, 
+               a.appointment_number, a.appointment_date,
+               p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email,
+               s.title AS service_title,
+               pro.name AS professional_name
+        FROM issue_tickets it
+        JOIN appointments a ON it.appointment_id = a.id
+        JOIN users p ON it.patient_id = p.id
+        JOIN services s ON a.service_id = s.id
+        LEFT JOIN users pro ON a.professional_id = pro.id
+        ORDER BY it.id DESC
+        """)
     rows = cursor.fetchall()
     conn.close()
 
@@ -813,5 +1161,6 @@ def get_stats():
 
 if __name__ == "__main__":
     init_db()
+    debug_mode = os.environ.get("FLASK_DEBUG", "0").lower() in {"1", "true", "yes", "on"}
     print("Starting Home Healthcare Management System on http://127.0.0.1:5000")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=debug_mode, use_reloader=debug_mode)

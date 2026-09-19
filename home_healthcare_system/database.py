@@ -12,13 +12,21 @@ import sqlite3
 import os
 import json
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "healthcare.db")
+default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "healthcare.db")
+if os.environ.get("VERCEL"):
+    default_db_path = "/tmp/healthcare.db"
+DB_PATH = os.environ.get("DATABASE_PATH", default_db_path)
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def secure_password(password):
+    return generate_password_hash(password)
 
 def init_db(force_reseed=False):
     if force_reseed and os.path.exists(DB_PATH):
@@ -130,7 +138,7 @@ def init_db(force_reseed=False):
         patient_id INTEGER NOT NULL,
         professional_id INTEGER NOT NULL,
         doctor_name TEXT NOT NULL,
-        pharmacist_name TEXT DEFAULT 'Chetna (Pharmacist)',
+        pharmacist_name TEXT DEFAULT 'Pharmacist',
         diagnosis TEXT NOT NULL,
         medicines_json TEXT NOT NULL,
         special_instructions TEXT,
@@ -199,7 +207,42 @@ def init_db(force_reseed=False):
 
     conn.commit()
     seed_updated_users_data(conn)
+    ensure_requested_staff_roster(conn)
+    ensure_therapist_demo_account(conn)
     conn.close()
+
+def ensure_requested_staff_roster(conn):
+    """Apply the current demo roster to both new and existing databases."""
+    conn.execute("UPDATE users SET name = ?, email = ? WHERE id = 1", ("Ram", "ram@demo.com"))
+    conn.execute("UPDATE users SET name = ?, email = ? WHERE email = 'patient@demo.com'", ("Ram", "ram@demo.com"))
+    conn.execute("UPDATE users SET name = ? WHERE email = 'sandeep@demo.com'", ("Admin",))
+    conn.execute("UPDATE users SET name = ?, email = ? WHERE email = 'pharm.chetna@demo.com'", ("Pharmacist", "pharm@demo.com"))
+
+    requested_staff = [
+        ("Chetna", "nurse.chetna@demo.com", secure_password("nurse123"), "professional", "+977 9811111111", 30, "Female", "A+", "Baneshwor, Kathmandu", "General Nursing & Patient Care", "BSN, RN", 6, 4.95, "https://images.unsplash.com/photo-1584515933487-779824d29309?w=150"),
+        ("Dr. Sunil", "dr.sunil@demo.com", secure_password("doctor123"), "professional", "+977 9822222222", 44, "Male", "B+", "Maharajgunj, Kathmandu", "Consultant Physician", "MBBS, MD", 15, 4.9, "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150"),
+        ("Dr. Sahil", "dr.sahil@demo.com", secure_password("doctor123"), "professional", "+977 9833333333", 41, "Male", "O+", "Thamel, Kathmandu", "Consultant Physician & Cardiologist", "MBBS, MD", 12, 4.9, "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150"),
+    ]
+    conn.executemany("""
+        INSERT OR IGNORE INTO users
+        (name, email, password, role, phone, age, gender, blood_group, address, specialization, qualification, experience_years, rating, avatar)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, requested_staff)
+    conn.commit()
+
+def ensure_therapist_demo_account(conn):
+    """Keep the therapist portal available even for databases created before this role was added."""
+    conn.execute("""
+        INSERT OR IGNORE INTO users
+        (name, email, password, role, phone, age, gender, blood_group, address, specialization, qualification, experience_years, rating, avatar)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        "Asha Shrestha, PT", "therapist.asha@demo.com", secure_password("therapist123"), "professional",
+        "+977 9801234567", 33, "Female", "O+", "Patan, Lalitpur",
+        "Physical Therapist, Rehabilitation & Mobility Care", "BPT, MPT, Licensed Physiotherapist",
+        10, 4.96, "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150"
+    ))
+    conn.commit()
 
 def seed_updated_users_data(conn):
     cursor = conn.cursor()
@@ -212,19 +255,19 @@ def seed_updated_users_data(conn):
     # 1. Seed Users (Ram, Sandeep, Dr. Binod Thapa, Rama, Chetna)
     users_data = [
         # 1. Patient: Ram
-        ("Ram", "ram@demo.com", "ram123", "patient", "+977 9841234567", 48, "Male", "O+", "Lazimpat, Kathmandu", None, None, None, 5.0, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"),
+        ("Ram", "ram@demo.com", secure_password("ram123"), "patient", "+977 9841234567", 48, "Male", "O+", "Lazimpat, Kathmandu", None, None, None, 5.0, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"),
         
         # 2. Admin: Sandeep
-        ("Sandeep", "sandeep@demo.com", "admin123", "admin", "+977 9851098765", 42, "Male", "B+", "Central Command Hospital HQ, Kathmandu", "Chief Hospital Director & System Administrator", "MD, MHA, Health Informatics", 16, 5.0, "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150"),
+        ("Sandeep", "sandeep@demo.com", secure_password("admin123"), "admin", "+977 9851098765", 42, "Male", "B+", "Central Command Hospital HQ, Kathmandu", "Chief Hospital Director & System Administrator", "MD, MHA, Health Informatics", 16, 5.0, "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150"),
         
         # 3. Doctor: Binod Thapa
-        ("Dr. Binod Thapa", "dr.binod@demo.com", "doctor123", "professional", "+977 9841987654", 45, "Male", "A+", "Baluwatar, Kathmandu", "Senior Consultant General Physician & Cardiologist", "MBBS, MD (Internal Medicine), Board Certified", 18, 4.98, "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150"),
+        ("Dr. Binod Thapa", "dr.binod@demo.com", secure_password("doctor123"), "professional", "+977 9841987654", 45, "Male", "A+", "Baluwatar, Kathmandu", "Senior Consultant General Physician & Cardiologist", "MBBS, MD (Internal Medicine), Board Certified", 18, 4.98, "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150"),
         
         # 4. Nurse: Rama
-        ("Rama", "nurse.rama@demo.com", "nurse123", "professional", "+977 9860123456", 31, "Female", "B+", "Baneshwor, Kathmandu", "Critical Care, Post-Op & Wound Management Nurse", "BSN, RN, Certified Critical Care Nurse", 9, 4.95, "https://images.unsplash.com/photo-1594824813580-c116d4791559?w=150"),
+        ("Rama", "nurse.rama@demo.com", secure_password("nurse123"), "professional", "+977 9860123456", 31, "Female", "B+", "Baneshwor, Kathmandu", "Critical Care, Post-Op & Wound Management Nurse", "BSN, RN, Certified Critical Care Nurse", 9, 4.95, "https://images.unsplash.com/photo-1594824813580-c116d4791559?w=150"),
         
         # 5. Pharmacist: Chetna
-        ("Chetna", "pharm.chetna@demo.com", "pharm123", "pharmacist", "+977 9812345678", 29, "Female", "AB+", "Maharajgunj, Kathmandu", "Chief Clinical Pharmacist & Medicine Dispenser", "B.Pharm, Pharm.D, Registered Pharmacist", 7, 4.9, "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150")
+        ("Chetna", "pharm.chetna@demo.com", secure_password("pharm123"), "pharmacist", "+977 9812345678", 29, "Female", "AB+", "Maharajgunj, Kathmandu", "Chief Clinical Pharmacist & Medicine Dispenser", "B.Pharm, Pharm.D, Registered Pharmacist", 7, 4.9, "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150")
     ]
 
     cursor.executemany("""
@@ -257,7 +300,7 @@ def seed_updated_users_data(conn):
         (
             "Clinical Pharmacy & Medicine Dispensation",
             "Pharmacy",
-            "Doorstep medicine dispensation, medication therapy management, dosage review, and drug interaction verification managed directly by Pharmacist Chetna.",
+            "Doorstep medicine dispensation, medication therapy management, dosage review, and drug interaction verification managed directly by the Pharmacist.",
             35.00,
             "30 mins",
             "fa-pills",
@@ -343,8 +386,8 @@ def seed_updated_users_data(conn):
     INSERT INTO prescriptions (
         appointment_id, patient_id, professional_id, doctor_name, pharmacist_name, diagnosis, medicines_json, special_instructions, follow_up_date
     ) VALUES (
-        ?, 1, 3, 'Dr. Binod Thapa, MD', 'Chetna Karki, B.Pharm', 'Essential Hypertension (Controlled) - Routine Bedside Review',
-        ?, 'Reduce dietary salt. Maintain 30 mins brisk walking daily. Verified and dispensed by Pharmacist Chetna.', ?
+        ?, 1, 3, 'Dr. Binod Thapa, MD', 'Pharmacist, B.Pharm', 'Essential Hypertension (Controlled) - Routine Bedside Review',
+        ?, 'Reduce dietary salt. Maintain 30 mins brisk walking daily. Verified and dispensed by the Pharmacist.', ?
     )
     """, (app_id_1, json.dumps(medicines), (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")))
 
@@ -396,7 +439,7 @@ def seed_updated_users_data(conn):
     ) VALUES (
         'HH-2026-003', 1, 3, NULL, 'Pending', 4,
         ?, '11:00 AM - 11:30 AM', 'Lazimpat, Kathmandu',
-        'Monthly chronic prescription refill and medicine therapy counseling by Pharmacist Chetna.',
+        'Monthly chronic prescription refill and medicine therapy counseling by the Pharmacist.',
         'Sita Sharma (Spouse)', '+977 9841000000', '[]'
     )
     """, ((datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),))

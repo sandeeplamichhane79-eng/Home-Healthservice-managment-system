@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Home Healthcare Management System - Core Application JS
  * Handles Authentication, Role-based Sections, Workflow Stepper, and Notifications
  */
@@ -12,6 +12,18 @@ const AppState = {
   selectedAppointment: null,
   currentStep: 1
 };
+
+function isAuthenticatedSession() {
+  return sessionStorage.getItem("healthcare_session_auth") === "true";
+}
+
+function setAuthenticatedSession(isAuthenticated) {
+  if (isAuthenticated) {
+    sessionStorage.setItem("healthcare_session_auth", "true");
+  } else {
+    sessionStorage.removeItem("healthcare_session_auth");
+  }
+}
 
 const uiTranslations = {
   "QUICK ROLE ACCESS (1-CLICK TEST):": "छिटो भूमिका पहुँच (एक क्लिक परीक्षण):",
@@ -303,14 +315,21 @@ async function apiRequest(endpoint, method = "GET", body = null) {
 // Authentication & Role-Based Section Routing
 // ==========================================================================
 async function fetchCurrentUser() {
+  const hasFreshLogin = isAuthenticatedSession();
   const data = await apiRequest("/api/auth/me");
-  if (data.success && data.user) {
+
+  if (data.success && data.user && hasFreshLogin) {
     AppState.currentUser = data.user;
     AppState.currentRole = data.user.role;
+    setAuthenticatedSession(true);
+    setAppLockedState(false);
     updateUserHeaderUI();
     renderRoleSpecificViews();
   } else {
-    // If not logged in, open login modal
+    AppState.currentUser = null;
+    AppState.currentRole = "patient";
+    setAuthenticatedSession(false);
+    setAppLockedState(true);
     openLoginModal();
   }
 }
@@ -320,6 +339,8 @@ function updateUserHeaderUI() {
   const roleEl = document.getElementById("headerUserRole");
   const avatarEl = document.getElementById("headerUserAvatar");
   const badgeSection = document.getElementById("userBadgeSection");
+  const loginBtn = document.getElementById("headerLoginBtn");
+  const logoutBtn = document.getElementById("headerLogoutBtn");
 
   if (AppState.currentUser) {
     if (nameEl) {
@@ -334,16 +355,54 @@ function updateUserHeaderUI() {
       roleEl.textContent = roleDisplay;
     }
     if (avatarEl) avatarEl.src = AppState.currentUser.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100";
-    if (badgeSection) badgeSection.style.display = "flex";
+    if (badgeSection) {
+      badgeSection.style.display = "flex";
+      if (AppState.currentUser.role === "patient") {
+        badgeSection.title = "Click to view/edit My Patient Profile";
+      } else if (AppState.currentUser.role === "admin") {
+        badgeSection.title = "Admin Command Center - Click to view";
+      } else {
+        badgeSection.title = `${AppState.currentUser.name} (${AppState.currentUser.role.toUpperCase()}) - Click to view`;
+      }
+    }
+    if (loginBtn) loginBtn.style.display = "none";
+    const regBtn = document.getElementById("headerRegisterBtn");
+    if (regBtn) regBtn.style.display = "none";
+    if (logoutBtn) logoutBtn.style.display = "inline-flex";
+  } else {
+    if (badgeSection) badgeSection.style.display = "none";
+    if (loginBtn) loginBtn.style.display = "inline-flex";
+    const regBtn = document.getElementById("headerRegisterBtn");
+    if (regBtn) regBtn.style.display = "inline-flex";
+    if (logoutBtn) logoutBtn.style.display = "none";
   }
+
+  // Toggle patient-session CSS class so top demo role bar is completely hidden for patients
+  document.body.classList.toggle("patient-session", Boolean(AppState.currentUser && AppState.currentUser.role === "patient"));
 
   // Update active chip state in top demo switcher
   document.querySelectorAll(".role-chip-btn").forEach(btn => {
     btn.classList.remove("active");
-    if (btn.dataset.role === AppState.currentRole || (AppState.currentUser && AppState.currentUser.email.includes(btn.dataset.role))) {
+    if (AppState.currentUser && (btn.dataset.role === AppState.currentRole || (AppState.currentUser.email && AppState.currentUser.email.includes(btn.dataset.role)))) {
       btn.classList.add("active");
     }
   });
+}
+
+function handleUserBadgeClick() {
+  if (!AppState.currentUser) {
+    openLoginModal();
+    return;
+  }
+  if (AppState.currentUser.role === "patient") {
+    openPatientProfileModal();
+  } else if (AppState.currentUser.role === "admin") {
+    switchTab("admin");
+    showToast("Active Portal: Admin Command & Healthcare Dispatch Center", "info");
+  } else {
+    switchTab("professional");
+    showToast(`Active Portal: ${AppState.currentUser.name} (${AppState.currentUser.role.toUpperCase()})`, "info");
+  }
 }
 
 function getStaffPortal(user) {
@@ -380,12 +439,17 @@ function renderRoleSpecificViews() {
   const navAdmin = document.getElementById("navBtnAdmin");
   const heroSection = document.getElementById("heroSection");
   const roleBanner = document.getElementById("roleBanner");
+  const demoBar = document.querySelector(".demo-role-bar");
 
   if (!AppState.currentUser) {
+    document.body.classList.remove("patient-session");
+    if (demoBar) demoBar.style.display = "flex";
     if (navServices) navServices.style.display = "flex";
     if (navRecords) navRecords.style.display = "none";
     if (navProfessional) navProfessional.style.display = "none";
     if (navAdmin) navAdmin.style.display = "none";
+    if (heroSection) heroSection.style.display = "block";
+    if (roleBanner) roleBanner.innerHTML = "";
     switchTab("services");
     return;
   }
@@ -394,6 +458,8 @@ function renderRoleSpecificViews() {
 
   if (role === "admin") {
     // ADMIN SECTION ONLY
+    document.body.classList.remove("patient-session");
+    if (demoBar) demoBar.style.display = "flex";
     if (navServices) navServices.style.display = "flex";
     if (navRecords) navRecords.style.display = "none";
     if (navProfessional) navProfessional.style.display = "none";
@@ -417,6 +483,8 @@ function renderRoleSpecificViews() {
 
   } else if (role === "professional" || role === "pharmacist") {
     // Dedicated staff portals: nurse, doctor, therapist, or pharmacist.
+    document.body.classList.remove("patient-session");
+    if (demoBar) demoBar.style.display = "flex";
     const portal = renderStaffDashboard(AppState.currentUser);
     if (navServices) navServices.style.display = "none";
     if (navRecords) navRecords.style.display = "none";
@@ -441,7 +509,11 @@ function renderRoleSpecificViews() {
     switchTab("professional");
 
   } else {
-    // PATIENT SECTION ONLY
+    // PATIENT SECTION ONLY: Strict isolation so patients only access their own profile
+    document.body.classList.add("patient-session");
+    const demoBar = document.querySelector(".demo-role-bar");
+    if (demoBar) demoBar.style.display = "none";
+
     if (navServices) navServices.style.display = "flex";
     if (navRecords) navRecords.style.display = "flex";
     if (navProfessional) navProfessional.style.display = "none";
@@ -450,13 +522,15 @@ function renderRoleSpecificViews() {
 
     if (roleBanner) {
       roleBanner.innerHTML = `
-        <div style="background: linear-gradient(135deg, #065f46 0%, #1e293b 100%); color: white; padding: 0.85rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #10b981;">
+        <div style="background: linear-gradient(135deg, #065f46 0%, #1e293b 100%); color: white; padding: 0.85rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #10b981; flex-wrap:wrap; gap:0.75rem;">
           <div>
-            <div style="font-size:0.7rem; color:#34d399; font-weight:700; text-transform:uppercase;">Patient Portal Active</div>
+            <div style="font-size:0.7rem; color:#34d399; font-weight:700; text-transform:uppercase;">Personal Patient Portal Active</div>
             <h4 style="margin:0; font-size:1.05rem; font-weight:800;">Namaste, ${AppState.currentUser.name}</h4>
           </div>
-          <div style="font-size:0.8rem; color:#cbd5e1;">
-            Blood Group: <strong style="color:#34d399;">${AppState.currentUser.blood_group || 'O+'}</strong> | Phone: ${AppState.currentUser.phone || 'N/A'}
+          <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; font-size:0.8rem; color:#cbd5e1;">
+            <span>Blood Group: <strong style="color:#34d399;">${AppState.currentUser.blood_group || 'O+'}</strong> | Phone: ${AppState.currentUser.phone || 'N/A'}</span>
+            <button class="btn btn-primary btn-sm" onclick="openPatientProfileModal()"><i class="fa-solid fa-id-card"></i> My Profile</button>
+            <button class="btn btn-secondary btn-sm" onclick="openChangePasswordModal()"><i class="fa-solid fa-user-lock"></i> Change Password</button>
           </div>
         </div>
       `;
@@ -468,8 +542,113 @@ function renderRoleSpecificViews() {
 // ==========================================================================
 // Login, Register & Logout Handlers
 // ==========================================================================
+function setAppLockedState(isLocked) {
+  const topBar = document.querySelector(".demo-role-bar");
+  const navBar = document.querySelector(".navbar");
+  const workflow = document.querySelector(".workflow-section");
+  const mainContent = document.querySelector("main.container");
+
+  if (topBar) {
+    if (isLocked || (AppState.currentUser && AppState.currentUser.role === "patient")) {
+      topBar.style.display = "none";
+    } else {
+      topBar.style.display = "";
+    }
+  }
+  if (navBar) navBar.style.display = isLocked ? "none" : "";
+  if (workflow) workflow.style.display = isLocked ? "none" : "";
+  if (mainContent) mainContent.style.display = isLocked ? "none" : "";
+
+  document.body.classList.toggle("app-locked", isLocked);
+}
+
 function openLoginModal() {
+  if (!AppState.currentUser) {
+    setAppLockedState(true);
+  }
+  switchAuthTab('login');
+  const patientCard = document.querySelector('.role-login-card[data-login-role="patient"]');
+  if (patientCard) {
+    document.querySelectorAll(".role-login-card").forEach(c => c.classList.remove("active"));
+    patientCard.classList.add("active");
+  }
+  const staffPinGroup = document.getElementById("staffPinGroup");
+  const staffPinInput = document.getElementById("loginStaffPin");
+  const submitBtn = document.getElementById("loginSubmitBtn");
+  if (staffPinGroup) staffPinGroup.style.display = "none";
+  if (staffPinInput) staffPinInput.value = "";
+  if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Patient Portal';
+
   openModal("authModal");
+}
+
+function openRegisterModal() {
+  openLoginModal();
+  switchAuthTab('register');
+}
+
+function openForgotPasswordModal() {
+  closeModal("authModal");
+  openModal("forgotPasswordModal");
+}
+
+function openChangePasswordModal() {
+  openModal("changePasswordModal");
+}
+
+function openPatientProfileModal() {
+  if (!AppState.currentUser) {
+    openLoginModal();
+    return;
+  }
+  const nameEl = document.getElementById("profileName");
+  const emailEl = document.getElementById("profileEmail");
+  const phoneEl = document.getElementById("profilePhone");
+  const ageEl = document.getElementById("profileAge");
+  const genderEl = document.getElementById("profileGender");
+  const bloodEl = document.getElementById("profileBloodGroup");
+  const addrEl = document.getElementById("profileAddress");
+  const idEl = document.getElementById("profileUserIdDisplay");
+
+  if (nameEl) nameEl.value = AppState.currentUser.name || "";
+  if (emailEl) emailEl.value = AppState.currentUser.email || "";
+  if (phoneEl) phoneEl.value = AppState.currentUser.phone || "";
+  if (ageEl) ageEl.value = AppState.currentUser.age || "";
+  if (genderEl) genderEl.value = AppState.currentUser.gender || "Other";
+  if (bloodEl) bloodEl.value = AppState.currentUser.blood_group || "O+";
+  if (addrEl) addrEl.value = AppState.currentUser.address || "";
+  if (idEl) idEl.textContent = `#PAT-${AppState.currentUser.id}`;
+
+  openModal("patientProfileModal");
+}
+
+async function handlePatientProfileSubmit(event) {
+  event.preventDefault();
+  const name = document.getElementById("profileName").value.trim();
+  const phone = document.getElementById("profilePhone").value.trim();
+  const age = parseInt(document.getElementById("profileAge").value) || null;
+  const gender = document.getElementById("profileGender").value;
+  const bloodGroup = document.getElementById("profileBloodGroup").value;
+  const address = document.getElementById("profileAddress").value.trim();
+
+  if (!name) {
+    showToast("Full Name is required.", "warning");
+    return;
+  }
+
+  const res = await apiRequest("/api/patient/profile", "POST", {
+    name, phone, age, gender, blood_group: bloodGroup, address
+  });
+
+  if (res.success && res.user) {
+    AppState.currentUser = res.user;
+    updateUserHeaderUI();
+    renderRoleSpecificViews();
+    closeModal("patientProfileModal");
+    showToast("Your profile has been updated successfully!", "success");
+  } else {
+    showToast(res.message || "Failed to update profile.", "error");
+  }
 }
 
 function fillLoginCredentials(email, password) {
@@ -481,12 +660,28 @@ function fillLoginCredentials(email, password) {
 function selectRoleLogin(role, email, password) {
   document.querySelectorAll(".role-login-card").forEach(card => card.classList.toggle("active", card.dataset.loginRole === role));
   fillLoginCredentials(email, password);
+
+  const staffPinGroup = document.getElementById("staffPinGroup");
+  const staffPinInput = document.getElementById("loginStaffPin");
+  const submitBtn = document.getElementById("loginSubmitBtn");
+
+  if (role === "patient") {
+    if (staffPinGroup) staffPinGroup.style.display = "none";
+    if (staffPinInput) staffPinInput.value = "";
+    if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Patient Portal';
+  } else {
+    if (staffPinGroup) staffPinGroup.style.display = "block";
+    if (staffPinInput) staffPinInput.value = "";
+    const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+    if (submitBtn) submitBtn.innerHTML = `<i class="fa-solid fa-user-shield"></i> Verify PIN & Sign In to ${roleLabel} Portal`;
+  }
 }
 
 async function handleLoginSubmit(event) {
   event.preventDefault();
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
+  const staffPin = (document.getElementById("loginStaffPin")?.value || "").trim();
 
   if (!email || !password) {
     showToast("Please enter both ID/Email and Password.", "warning");
@@ -495,16 +690,22 @@ async function handleLoginSubmit(event) {
 
   showToast("Verifying credentials...", "info", 1500);
 
-  const data = await apiRequest("/api/auth/login", "POST", { email, password });
+  const data = await apiRequest("/api/auth/login", "POST", { email, password, staff_pin: staffPin });
   if (data.success) {
     AppState.currentUser = data.user;
     AppState.currentRole = data.user.role;
+    setAuthenticatedSession(true);
+    setAppLockedState(false);
     showToast(`Welcome, ${data.user.name}! Access granted to ${data.user.role.toUpperCase()} section.`, "success");
     closeModal("authModal");
     updateUserHeaderUI();
     renderRoleSpecificViews();
+    if (typeof loadServices === "function") loadServices();
     if (typeof loadAppointments === "function") loadAppointments();
+    if (typeof loadPatientRecords === "function") loadPatientRecords();
+    updateWorkflowStepper(2);
   } else {
+    setAuthenticatedSession(false);
     showToast(data.message || "Invalid Email or Password.", "error");
   }
 }
@@ -531,27 +732,94 @@ async function handleRegisterSubmit(event) {
   const gender = document.getElementById("regGender").value;
   const bloodGroup = document.getElementById("regBloodGroup").value;
   const address = document.getElementById("regAddress").value.trim();
-  const role = document.getElementById("regRole").value;
+  const role = "patient";
 
   if (!name || !email || !password) {
     showToast("Please fill in Name, Email, and Password.", "warning");
     return;
   }
+  if (password.length < 6) {
+    showToast("Password must be at least 6 characters with letters and numbers.", "warning");
+    return;
+  }
 
   const payload = {
-    name, email, password, phone, age, gender, blood_group: bloodGroup, address, role
+    name, email, password, phone, age, gender, blood_group: bloodGroup, address, role: "patient"
   };
 
   const data = await apiRequest("/api/auth/register", "POST", payload);
   if (data.success) {
     AppState.currentUser = data.user;
     AppState.currentRole = data.user.role;
+    setAuthenticatedSession(true);
+    setAppLockedState(false);
     showToast(`Registration successful! Logged in as ${data.user.name}.`, "success");
     closeModal("authModal");
     updateUserHeaderUI();
     renderRoleSpecificViews();
+    if (typeof loadServices === "function") loadServices();
+    if (typeof loadAppointments === "function") loadAppointments();
+    if (typeof loadPatientRecords === "function") loadPatientRecords();
+    updateWorkflowStepper(2);
   } else {
+    setAuthenticatedSession(false);
     showToast(data.message || "Registration failed.", "error");
+  }
+}
+
+async function handleForgotPasswordSubmit(event) {
+  event.preventDefault();
+  const identifier = document.getElementById("forgotPasswordIdentifier").value.trim();
+  const data = await apiRequest("/api/auth/forgot-password", "POST", { identifier });
+  if (data.success) {
+    showToast(data.message || "Verification code sent.", "success");
+    document.getElementById("forgotPasswordOtp").value = data.otp || "";
+  } else {
+    showToast(data.message || "Unable to send verification code.", "error");
+  }
+}
+
+async function handleResetPasswordSubmit(event) {
+  event.preventDefault();
+  const identifier = document.getElementById("forgotPasswordIdentifier").value.trim();
+  const otp = document.getElementById("forgotPasswordOtp").value.trim();
+  const newPassword = document.getElementById("forgotPasswordNew").value.trim();
+  const confirmPassword = document.getElementById("forgotPasswordConfirm").value.trim();
+
+  const data = await apiRequest("/api/auth/reset-password", "POST", {
+    identifier,
+    otp,
+    new_password: newPassword,
+    confirm_password: confirmPassword
+  });
+  if (data.success) {
+    showToast(data.message || "Password reset successful.", "success");
+    closeModal("forgotPasswordModal");
+    openLoginModal();
+  } else {
+    showToast(data.message || "Password reset failed.", "error");
+  }
+}
+
+async function handleChangePasswordSubmit(event) {
+  event.preventDefault();
+  const currentPassword = document.getElementById("currentPassword").value.trim();
+  const newPassword = document.getElementById("newPassword").value.trim();
+  const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+  const data = await apiRequest("/api/auth/change-password", "POST", {
+    current_password: currentPassword,
+    new_password: newPassword,
+    confirm_password: confirmPassword
+  });
+  if (data.success) {
+    showToast(data.message || "Password updated successfully.", "success");
+    closeModal("changePasswordModal");
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("confirmPassword").value = "";
+  } else {
+    showToast(data.message || "Password change failed.", "error");
   }
 }
 
@@ -559,20 +827,47 @@ async function logoutUser() {
   await apiRequest("/api/auth/logout", "POST");
   AppState.currentUser = null;
   AppState.currentRole = "patient";
+  setAuthenticatedSession(false);
   showToast("Logged out successfully.", "info");
   updateUserHeaderUI();
+  renderRoleSpecificViews();
   openLoginModal();
 }
 
 async function switchDemoRole(role) {
+  // 1. Strict Isolation: If currently logged in as a patient, block switching to ANY staff or admin profile
+  if (AppState.currentUser && AppState.currentUser.role === "patient") {
+    if (role !== "patient") {
+      showToast("Access Denied: Logged-in patients cannot view or access Doctor, Nurse, or Admin profiles.", "error");
+      return;
+    }
+  }
+
+  // 2. If target is a staff/admin role, require existing staff authentication or prompt PIN login
+  if (role !== "patient") {
+    const isStaffOrAdmin = AppState.currentUser && (AppState.currentUser.role === "admin" || AppState.currentUser.role === "professional" || AppState.currentUser.role === "pharmacist");
+    if (!isStaffOrAdmin) {
+      showToast("Hospital Clearance Required: Access to Doctor, Nurse, or Admin profiles requires credentials and Authorization PIN.", "warning");
+      const cleanRole = role.startsWith("doctor") ? "doctor" : (role.startsWith("nurse") ? "nurse" : role);
+      selectRoleLogin(cleanRole, "", "");
+      openLoginModal();
+      return;
+    }
+  }
+
+  // 3. For authorized staff/admin:
   const data = await apiRequest("/api/auth/demo-switch", "POST", { role });
   if (data.success) {
     AppState.currentUser = data.user;
     AppState.currentRole = data.user.role;
+    setAppLockedState(false);
     showToast(`Switched account to: ${data.user.name} (${data.user.role.toUpperCase()} Section)`, "info");
     updateUserHeaderUI();
     renderRoleSpecificViews();
     if (typeof loadAppointments === "function") loadAppointments();
+    if (typeof loadServices === "function") loadServices();
+  } else {
+    showToast(data.message || "Role switch restricted.", "warning");
   }
 }
 
@@ -580,6 +875,12 @@ async function switchDemoRole(role) {
 // Navigation & Tab Switching
 // ==========================================================================
 function switchTab(tabName) {
+  // Strict Isolation: Patients cannot view staff or admin tabs
+  if (AppState.currentUser && AppState.currentUser.role === "patient" && (tabName === "admin" || tabName === "professional")) {
+    showToast("Access Denied: Patient accounts cannot access healthcare staff or admin portals.", "warning");
+    tabName = "services";
+  }
+
   AppState.activeTab = tabName;
   
   document.querySelectorAll(".nav-btn").forEach(btn => {
@@ -636,7 +937,11 @@ function onStepperClick(stepNumber) {
   updateWorkflowStepper(stepNumber);
   switch (stepNumber) {
     case 1:
-      openLoginModal();
+      if (AppState.currentUser) {
+        showToast(`Already logged in as ${AppState.currentUser.name} (${AppState.currentUser.role.toUpperCase()}).`, "info");
+      } else {
+        openLoginModal();
+      }
       break;
     case 2:
       switchTab("services");
@@ -649,38 +954,30 @@ function onStepperClick(stepNumber) {
       }
       break;
     case 4:
-      if (AppState.currentRole !== "admin") {
-        showToast("Step 4 requires Admin login to assign professionals. Switching to Admin...", "info");
-        switchDemoRole("admin");
+      if (AppState.currentUser && AppState.currentUser.role === "patient") {
+        showToast("Step 4 (Provider Dispatch) is handled by administrators. Clinicians will be assigned to your visit.", "info");
+      } else if (AppState.currentRole !== "admin") {
+        showToast("Step 4 requires Admin login to assign professionals.", "info");
       } else {
         switchTab("admin");
       }
       break;
     case 5:
     case 6:
-      if (AppState.currentRole !== "professional") {
-        showToast("Step 5 & 6 requires Healthcare Professional login. Switching to Nurse Sarah...", "info");
-        switchDemoRole("nurse");
+      if (AppState.currentUser && AppState.currentUser.role === "patient") {
+        showToast("Steps 5 & 6 (Bedside Examination & Care) are conducted in person by your assigned clinician.", "info");
+      } else if (AppState.currentRole !== "professional") {
+        showToast("Steps 5 & 6 are conducted by Healthcare Staff.", "info");
       } else {
         switchTab("professional");
       }
       break;
     case 7:
     case 8:
-      if (AppState.currentRole !== "patient") {
-        showToast("Viewing records and making payment requires Patient login. Switching to Patient...", "info");
-        switchDemoRole("patient");
-      } else {
-        switchTab("records");
-      }
+      switchTab("records");
       break;
     case 9:
-      if (AppState.currentRole !== "patient") {
-        showToast("Submitting feedback and issue tickets is done from Patient account.", "info");
-        switchDemoRole("patient");
-      } else {
-        switchTab("records");
-      }
+      switchTab("records");
       break;
   }
 }
@@ -699,6 +996,9 @@ function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.classList.remove("open");
+  }
+  if (AppState.currentUser) {
+    setAppLockedState(false);
   }
 }
 
@@ -731,13 +1031,23 @@ document.addEventListener("click", (e) => {
 // App Initialization
 document.addEventListener("DOMContentLoaded", async () => {
   setLanguage(localStorage.getItem("preferredLanguage") || "en");
+  setAppLockedState(true);
   const localizationObserver = new MutationObserver(() => {
     localizationObserver.disconnect();
     localizePage();
     localizationObserver.observe(document.body, { childList: true, subtree: true });
   });
   localizationObserver.observe(document.body, { childList: true, subtree: true });
-  await fetchCurrentUser();
-  if (typeof loadServices === "function") await loadServices();
-  updateWorkflowStepper(2);
+
+  if (!isAuthenticatedSession()) {
+    AppState.currentUser = null;
+    AppState.currentRole = "patient";
+    setAppLockedState(true);
+    openLoginModal();
+  } else {
+    await fetchCurrentUser();
+  }
+
+  if (AppState.currentUser && typeof loadServices === "function") await loadServices();
+  if (AppState.currentUser) updateWorkflowStepper(2);
 });

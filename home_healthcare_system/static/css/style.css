@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    Home Healthcare Management System - Core Stylesheet
    Modern, responsive, accessible, animated healthcare UI
    ========================================================= */
@@ -59,13 +59,36 @@
 
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-main);
+  background:
+    linear-gradient(135deg, rgba(226, 248, 250, 0.42), rgba(191, 239, 244, 0.34)),
+    url('/static/images/hospital-background.png') center / cover fixed;
   color: var(--text-main);
   line-height: 1.6;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+}
+
+body.app-locked .demo-role-bar,
+body.app-locked .navbar,
+body.app-locked .workflow-section,
+body.app-locked main.container,
+body.patient-session .demo-role-bar {
+  display: none !important;
+}
+
+/* Keep the hospital scene present but subtle behind the working area. */
+main.container {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(1px);
+  border-left: 1px solid rgba(255, 255, 255, 0.52);
+  border-right: 1px solid rgba(255, 255, 255, 0.52);
+}
+
+@media (max-width: 768px) {
+  body { background-attachment: scroll; }
+  main.container { background: rgba(255, 255, 255, 0.75); }
 }
 
 a {
@@ -153,20 +176,199 @@ input, select, textarea {
 
 /* Main Navbar */
 .navbar {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
+  background: #fff;
   position: sticky;
   top: 0;
   z-index: 90;
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  padding: 0.75rem 0;
+  border-bottom: 4px solid #d41037;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.13);
+}
+
+.government-masthead {
+  min-height: 104px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px auto;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.masthead-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-decoration: none;
+  color: #0f172a;
+  min-width: 0;
+}
+
+.masthead-emblem {
+  height: 92px;
+  width: 92px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 3px 7px rgba(15, 23, 42, 0.18));
+}
+
+.masthead-government-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.18;
+  font-family: "Noto Sans Devanagari", "Mangal", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.masthead-government-name strong {
+  color: #0f172a;
+  font-size: 1.14rem;
+}
+
+.masthead-department,
+.masthead-location {
+  color: #d41037;
+  font-size: 0.86rem;
+}
+
+.masthead-service-info {
+  text-align: left;
+  color: #0f172a;
+  font-family: "Noto Sans Devanagari", "Mangal", sans-serif;
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+
+.masthead-service-info > strong:first-child {
+  display: block;
+  color: #0f766e;
+  font-size: 1.18rem;
+  font-weight: 800;
+}
+
+.masthead-service-info > strong:nth-child(2) {
+  display: block;
+  color: #d41037;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.masthead-contact {
+  margin-top: 0.45rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 1.1rem;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.masthead-contact span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #334155;
+}
+
+.masthead-contact span:first-child {
+  color: #0369a1;
+}
+
+.masthead-contact span:last-child {
+  color: #be123c;
+}
+
+.nepal-flag-card {
+  width: 76px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+  animation: flag-card-float 3.5s ease-in-out infinite;
+}
+
+.nepal-flag-card svg {
+  width: 64px;
+  height: 82px;
+  overflow: visible;
+}
+
+.language-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  white-space: nowrap;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.language-label {
+  color: #64748b;
+  margin-right: 0.2rem;
+}
+
+.language-option {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.25rem 0.15rem;
+}
+
+.language-option.active {
+  color: #0f766e;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.language-option:hover {
+  color: #d41037;
+}
+
+.language-divider {
+  color: #cbd5e1;
+}
+
+.flag-cloth {
+  transform-origin: 10px 75px;
+  animation: nepal-flag-wave 2.7s ease-in-out infinite;
+}
+
+@keyframes nepal-flag-wave {
+  0%, 100% { transform: skewY(0deg) scaleX(1); }
+  25% { transform: skewY(-2.5deg) scaleX(0.98); }
+  55% { transform: skewY(2.5deg) scaleX(1.02); }
+  78% { transform: skewY(-1.5deg) scaleX(0.99); }
+}
+
+@keyframes flag-card-float {
+  0%, 100% { transform: translateY(0); box-shadow: 0 5px 14px rgba(15, 23, 42, 0.18); }
+  50% { transform: translateY(-4px); box-shadow: 0 11px 20px rgba(15, 23, 42, 0.22); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nepal-flag-card,
+  .flag-cloth {
+    animation: none;
+  }
 }
 
 .nav-wrapper {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 54px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .brand-logo {
@@ -196,6 +398,82 @@ input, select, textarea {
   display: flex;
   align-items: center;
   gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .government-masthead {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 1rem;
+    padding: 12px 18px;
+  }
+
+  .masthead-service-info {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 0.9rem;
+  }
+
+  .nepal-flag-card {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .language-switcher {
+    grid-column: 3;
+    grid-row: 1;
+    flex-direction: column;
+    gap: 0.05rem;
+  }
+
+  .language-label,
+  .language-divider {
+    display: none;
+  }
+
+  .nav-wrapper {
+    padding: 0.4rem 1rem;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .government-masthead {
+    grid-template-columns: 1fr;
+    padding: 10px 14px;
+  }
+
+  .nepal-flag-card {
+    display: none;
+  }
+
+  .masthead-service-info {
+    grid-column: auto;
+    grid-row: auto;
+    font-size: 0.82rem;
+  }
+
+  .masthead-service-info > strong:first-child {
+    font-size: 0.96rem;
+  }
+
+  .masthead-service-info > strong:nth-child(2) {
+    font-size: 0.82rem;
+  }
+
+  .masthead-contact {
+    margin-top: 0.45rem;
+    font-size: 0.68rem;
+  }
+
+  .nav-wrapper {
+    flex-direction: column;
+  }
 }
 
 .nav-btn {
@@ -263,7 +541,7 @@ input, select, textarea {
    9-Step Interactive Workflow Banner & Stepper
    ========================================================================== */
 .workflow-section {
-  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(241, 245, 249, 0.7) 100%);
   border-bottom: 1px solid var(--border);
   padding: 1.5rem 0 1.25rem 0;
   box-shadow: var(--shadow-sm);
@@ -869,6 +1147,32 @@ input, select, textarea {
   box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap .form-control {
+  padding-right: 3rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.35rem;
+  line-height: 1;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--primary);
+}
+
 .form-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1186,6 +1490,54 @@ input, select, textarea {
   background: white;
   color: var(--primary);
   border-bottom: 2px solid var(--primary);
+}
+
+.role-login-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.role-login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.6rem 0.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  color: #475569;
+  background: #f8fafc;
+  font-size: 0.72rem;
+  font-weight: 800;
+  transition: var(--transition-fast);
+}
+
+.role-login-card i { font-size: 1rem; color: var(--primary); }
+.role-login-card:hover, .role-login-card.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+
+.staff-dashboard-intro {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.staff-workflow-card {
+  background: linear-gradient(135deg, #f0fdfa, #f8fafc);
+  border: 1px solid #cceee8;
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
+
+.staff-workflow-card i { color: var(--primary); margin-right: 0.35rem; }
+.staff-workflow-card h4 { font-size: 0.86rem; margin: 0 0 0.35rem; color: var(--dark); }
+.staff-workflow-card p { margin: 0; color: var(--text-muted); font-size: 0.76rem; line-height: 1.45; }
+
+@media (max-width: 650px) {
+  .role-login-grid { grid-template-columns: repeat(2, 1fr); }
+  .staff-dashboard-intro { grid-template-columns: 1fr; }
 }
 
 .preset-credentials-box {

@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="/static/css/animations.css">
   <link rel="stylesheet" href="/static/css/doctor_animation.css">
 </head>
-<body>
+<body class="app-locked">
 
   <!-- Top Quick Demo Role Switcher Bar -->
   <aside class="demo-role-bar">
@@ -94,17 +94,20 @@
       </nav>
 
       <div style="display:flex; align-items:center; gap:0.5rem;">
-        <div class="user-badge-menu" id="userBadgeSection" onclick="openLoginModal()" style="cursor:pointer;" title="Click to view or switch user credentials">
+        <div class="user-badge-menu" id="userBadgeSection" onclick="handleUserBadgeClick()" style="cursor:pointer;" title="Click to view My Profile">
           <img id="headerUserAvatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" alt="Avatar" class="user-avatar-mini">
           <div class="user-info-text">
             <span id="headerUserName" class="user-info-name">John Doe</span>
             <span id="headerUserRole" class="user-info-role">PATIENT</span>
           </div>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="openLoginModal()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Sign In with ID and Password">
+        <button class="btn btn-outline btn-sm" id="headerLoginBtn" onclick="openLoginModal()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Sign In with ID and Password">
           <i class="fa-solid fa-right-to-bracket"></i> Login
         </button>
-        <button class="btn btn-sm btn-danger" onclick="logoutUser()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Logout">
+        <button class="btn btn-primary btn-sm" id="headerRegisterBtn" onclick="openRegisterModal()" style="font-size:0.75rem; padding:0.4rem 0.6rem; background:#10b981; border-color:#10b981;" title="New Patient Registration">
+          <i class="fa-solid fa-user-plus"></i> Register
+        </button>
+        <button class="btn btn-sm btn-danger" id="headerLogoutBtn" onclick="logoutUser()" style="font-size:0.75rem; padding:0.4rem 0.6rem;" title="Logout">
           <i class="fa-solid fa-power-off"></i>
         </button>
       </div>
@@ -547,29 +550,44 @@
           <form onsubmit="handleLoginSubmit(event)">
             <div class="role-login-grid" aria-label="Choose your portal">
               <button type="button" class="role-login-card active" data-login-role="patient" onclick="selectRoleLogin('patient', 'patient@demo.com', 'ram123')"><i class="fa-solid fa-user"></i><span>Patient</span></button>
-              <button type="button" class="role-login-card" data-login-role="nurse" onclick="selectRoleLogin('nurse', 'nurse.rama@demo.com', 'nurse123')"><i class="fa-solid fa-user-nurse"></i><span>Nurse Rama</span></button>
-              <button type="button" class="role-login-card" data-login-role="nurse_chetna" onclick="selectRoleLogin('nurse_chetna', 'nurse.chetna@demo.com', 'nurse123')"><i class="fa-solid fa-user-nurse"></i><span>Nurse Chetna</span></button>
-              <button type="button" class="role-login-card" data-login-role="doctor" onclick="selectRoleLogin('doctor', 'dr.binod@demo.com', 'doctor123')"><i class="fa-solid fa-user-doctor"></i><span>Dr. Binod Thapa</span></button>
-              <button type="button" class="role-login-card" data-login-role="doctor_sunil" onclick="selectRoleLogin('doctor_sunil', 'dr.sunil@demo.com', 'doctor123')"><i class="fa-solid fa-user-doctor"></i><span>Dr. Sunil</span></button>
-              <button type="button" class="role-login-card" data-login-role="doctor_sahil" onclick="selectRoleLogin('doctor_sahil', 'dr.sahil@demo.com', 'doctor123')"><i class="fa-solid fa-user-doctor"></i><span>Dr. Sahil</span></button>
+              <button type="button" class="role-login-card" data-login-role="doctor" onclick="selectRoleLogin('doctor', 'dr.binod@demo.com', 'doctor123')"><i class="fa-solid fa-user-doctor"></i><span>Doctor</span></button>
+              <button type="button" class="role-login-card" data-login-role="nurse" onclick="selectRoleLogin('nurse', 'nurse.rama@demo.com', 'nurse123')"><i class="fa-solid fa-user-nurse"></i><span>Nurse</span></button>
+              <button type="button" class="role-login-card" data-login-role="admin" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></button>
               <button type="button" class="role-login-card" data-login-role="therapist" onclick="selectRoleLogin('therapist', 'therapist.asha@demo.com', 'therapist123')"><i class="fa-solid fa-person-walking"></i><span>Therapist</span></button>
               <button type="button" class="role-login-card" data-login-role="pharmacist" onclick="selectRoleLogin('pharmacist', 'pharm@demo.com', 'pharm123')"><i class="fa-solid fa-pills"></i><span>Pharmacist</span></button>
-              <button type="button" class="role-login-card" data-login-role="admin" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></button>
             </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address / Username *</label>
-              <input type="email" id="loginEmail" class="form-control" placeholder="Enter your registered email" value="patient@demo.com" required>
+              <input type="email" id="loginEmail" class="form-control" placeholder="Enter your registered email" value="" required>
             </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-lock"></i> Password *</label>
               <div class="password-input-wrap">
-                <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" value="demo123" required>
+                <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" value="" required>
                 <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Show password" title="Show password"><i class="fa-solid fa-eye"></i></button>
               </div>
             </div>
+            <div class="form-group" id="staffPinGroup" style="display:none; background:#f0f9ff; border:1px solid #bae6fd; border-radius:var(--radius-md); padding:0.75rem 1rem; margin-top:0.75rem;">
+              <label class="form-label" style="color:#0369a1; font-weight:700; display:flex; align-items:center; justify-content:space-between;">
+                <span><i class="fa-solid fa-shield-halved"></i> Hospital Authorization PIN (Staff Security Code) *</span>
+                <span class="badge" style="background:#0284c7; color:white; font-size:0.65rem; padding:0.15rem 0.45rem;">Hospital Clearance</span>
+              </label>
+              <div class="password-input-wrap" style="margin-top:0.25rem;">
+                <input type="password" id="loginStaffPin" class="form-control" placeholder="Enter Hospital Authorization PIN" maxlength="10" style="border-color:#38bdf8; background:#ffffff;">
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginStaffPin', this)" aria-label="Show PIN" title="Show PIN"><i class="fa-solid fa-eye"></i></button>
+              </div>
+              <div style="font-size:0.75rem; color:#0284c7; margin-top:0.35rem; display:flex; align-items:center; gap:0.4rem;">
+                <i class="fa-solid fa-lock"></i> <span>Restricted: Access limited to verified hospital clinical staff and administrators.</span>
+              </div>
+            </div>
 
-            <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem;">
-              <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to My Portal
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; margin-bottom:0.75rem;">
+              <span class="text-muted" style="font-size:0.8rem;">Role-based isolation: each portal displays its dedicated tools.</span>
+              <button type="button" class="btn btn-link btn-sm" onclick="openForgotPasswordModal()" style="padding:0; color:#38bdf8; font-weight:700;">Forgot Password?</button>
+            </div>
+
+            <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem;">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Patient Portal
             </button>
           </form>
 
@@ -577,98 +595,269 @@
             <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.4rem;">
               <i class="fa-solid fa-bolt"></i> Quick-Fill Credentials (Click to fill):
             </div>
-            <div style="display:flex; flex-wrap:wrap;">
+            <div style="display:flex; flex-wrap:wrap; gap:0.35rem;">
               <span class="preset-chip" onclick="selectRoleLogin('patient', 'patient@demo.com', 'ram123')">
-                <i class="fa-solid fa-user"></i> Patient: patient@demo.com
-              </span>
-              <span class="preset-chip" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')">
-                <i class="fa-solid fa-shield-halved"></i> Admin
-              </span>
-              <span class="preset-chip" onclick="selectRoleLogin('nurse', 'nurse.rama@demo.com', 'nurse123')">
-                <i class="fa-solid fa-user-nurse"></i> Rama: nurse.rama@demo.com
+                <i class="fa-solid fa-user"></i> Patient
               </span>
               <span class="preset-chip" onclick="selectRoleLogin('doctor', 'dr.binod@demo.com', 'doctor123')">
-                <i class="fa-solid fa-user-doctor"></i> Doctor: dr.binod@demo.com
+                <i class="fa-solid fa-user-doctor"></i> Doctor (Dr. Binod)
+              </span>
+              <span class="preset-chip" onclick="selectRoleLogin('nurse', 'nurse.rama@demo.com', 'nurse123')">
+                <i class="fa-solid fa-user-nurse"></i> Nurse (Rama)
+              </span>
+              <span class="preset-chip" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')">
+                <i class="fa-solid fa-shield-halved"></i> Admin (Sandeep)
               </span>
               <span class="preset-chip" onclick="selectRoleLogin('therapist', 'therapist.asha@demo.com', 'therapist123')">
-                <i class="fa-solid fa-person-walking"></i> Therapist: therapist.asha@demo.com
+                <i class="fa-solid fa-person-walking"></i> Therapist
+              </span>
+              <span class="preset-chip" onclick="selectRoleLogin('pharmacist', 'pharm@demo.com', 'pharm123')">
+                <i class="fa-solid fa-pills"></i> Pharmacist
               </span>
             </div>
+          </div>
+
+          <div style="margin-top:1rem; padding:0.85rem; background:#f0fdf4; border:1px dashed #86efac; border-radius:var(--radius-md); text-align:center;">
+            <div style="font-size:0.85rem; color:#166534; font-weight:700; margin-bottom:0.4rem;">
+              <i class="fa-solid fa-user-plus"></i> New Patient? Don't have an ID yet?
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="switchAuthTab('register')" style="width:100%; font-weight:700; background:#059669; border-color:#059669;">
+              <i class="fa-solid fa-user-plus"></i> Click Here to Register as New Patient (नयाँ बिरामी दर्ता)
+            </button>
           </div>
         </div>
 
         <div id="registerFormSection" style="display:none;">
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:0.75rem 1rem; margin-bottom:1.15rem; font-size:0.825rem; color:#166534; display:flex; align-items:center; gap:0.5rem;">
+            <i class="fa-solid fa-id-card-clip" style="font-size:1.25rem; color:#059669;"></i>
+            <span><strong>New Patient Registration (नयाँ बिरामी दर्ता):</strong> Create your personal profile to book home visits, view medical records, and track vitals securely.</span>
+          </div>
+
           <form onsubmit="handleRegisterSubmit(event)">
+            <input type="hidden" id="regRole" value="patient">
+
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Full Name *</label>
-                <input type="text" id="regName" class="form-control" placeholder="e.g. Ramesh Sharma" required>
+                <label class="form-label"><i class="fa-solid fa-user"></i> Full Name *</label>
+                <input type="text" id="regName" class="form-control" placeholder="e.g. Ram Kumar Shrestha" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Email Address *</label>
-                <input type="email" id="regEmail" class="form-control" placeholder="e.g. ramesh@example.com" required>
+                <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address *</label>
+                <input type="email" id="regEmail" class="form-control" placeholder="e.g. ram@example.com" required>
               </div>
             </div>
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Password *</label>
+                <label class="form-label"><i class="fa-solid fa-lock"></i> Password *</label>
                 <div class="password-input-wrap">
-                  <input type="password" id="regPassword" class="form-control" placeholder="Create password" required>
+                  <input type="password" id="regPassword" class="form-control" placeholder="Create password (min 6 chars)" required>
                   <button type="button" class="password-toggle" onclick="togglePasswordVisibility('regPassword', this)" aria-label="Show password" title="Show password"><i class="fa-solid fa-eye"></i></button>
                 </div>
               </div>
               <div class="form-group">
-                <label class="form-label">Phone Number *</label>
+                <label class="form-label"><i class="fa-solid fa-phone"></i> Phone Number *</label>
                 <input type="text" id="regPhone" class="form-control" placeholder="+977 98XXXXXXXX" required>
               </div>
             </div>
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Age</label>
-                <input type="number" id="regAge" class="form-control" value="35">
+                <label class="form-label"><i class="fa-solid fa-cake-candles"></i> Age</label>
+                <input type="number" id="regAge" class="form-control" placeholder="e.g. 35" value="35" min="1" max="120">
               </div>
               <div class="form-group">
-                <label class="form-label">Gender</label>
+                <label class="form-label"><i class="fa-solid fa-venus-mars"></i> Gender</label>
                 <select id="regGender" class="form-control">
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="Male">Male (पुरुष)</option>
+                  <option value="Female">Female (महिला)</option>
+                  <option value="Other">Other (अन्य)</option>
                 </select>
               </div>
             </div>
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Blood Group</label>
+                <label class="form-label"><i class="fa-solid fa-droplet"></i> Blood Group</label>
                 <select id="regBloodGroup" class="form-control">
                   <option value="O+">O+</option>
                   <option value="A+">A+</option>
                   <option value="B+">B+</option>
                   <option value="AB+">AB+</option>
                   <option value="O-">O-</option>
+                  <option value="A-">A-</option>
+                  <option value="B-">B-</option>
+                  <option value="AB-">AB-</option>
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">Account Role</label>
-                <select id="regRole" class="form-control">
-                  <option value="patient">Patient</option>
-                  <option value="professional">Healthcare Professional</option>
-                </select>
+                <label class="form-label"><i class="fa-solid fa-user-shield"></i> Profile Type</label>
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:var(--radius-md); padding:0.55rem 0.75rem; font-size:0.85rem; font-weight:700; color:#059669; display:flex; align-items:center; gap:0.4rem; height:42px;">
+                  <i class="fa-solid fa-check-circle"></i> Patient Profile (Strictly Private)
+                </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Home Address</label>
-              <input type="text" id="regAddress" class="form-control" placeholder="Enter municipality, ward no., city">
+              <label class="form-label"><i class="fa-solid fa-location-dot"></i> Home Address</label>
+              <input type="text" id="regAddress" class="form-control" placeholder="e.g. Kathmandu-3, Lazimpat">
             </div>
 
-            <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
-              <i class="fa-solid fa-user-check"></i> Register Account & Sign In
+            <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem; background:linear-gradient(135deg, #059669, #10b981); border:none;">
+              <i class="fa-solid fa-user-plus"></i> Register Patient Account & Sign In
             </button>
+
+            <div style="text-align:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid #e2e8f0;">
+              <span style="font-size:0.85rem; color:#64748b;">Already have an account?</span>
+              <button type="button" class="btn btn-link btn-sm" onclick="switchAuthTab('login')" style="color:#0284c7; font-weight:700; text-decoration:underline;">
+                Sign In to My Portal
+              </button>
+            </div>
           </form>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="forgotPasswordModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-key" style="color:var(--primary);"></i> Forgot Password</h3>
+        <button class="modal-close-btn" onclick="closeModal('forgotPasswordModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="handleForgotPasswordSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Registered email or phone number</label>
+            <input type="text" id="forgotPasswordIdentifier" class="form-control" placeholder="Enter your email or phone" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-paper-plane"></i> Send Verification Code</button>
+        </form>
+
+        <form onsubmit="handleResetPasswordSubmit(event)" style="margin-top:1rem;">
+          <div class="form-group">
+            <label class="form-label">Verification code (OTP)</label>
+            <input type="text" id="forgotPasswordOtp" class="form-control" placeholder="Enter 6-digit OTP" maxlength="6" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" id="forgotPasswordNew" class="form-control" placeholder="Create a strong password" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" id="forgotPasswordConfirm" class="form-control" placeholder="Re-enter new password" required>
+          </div>
+          <button type="submit" class="btn btn-success" style="width:100%;"><i class="fa-solid fa-check"></i> Reset Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="changePasswordModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-user-lock" style="color:var(--primary);"></i> Change Password</h3>
+        <button class="modal-close-btn" onclick="closeModal('changePasswordModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="handleChangePasswordSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Current Password</label>
+            <input type="password" id="currentPassword" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" id="newPassword" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password</label>
+            <input type="password" id="confirmPassword" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-shield-halved"></i> Update Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Patient Profile Modal -->
+  <div id="patientProfileModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:540px;">
+      <div class="modal-header" style="background:linear-gradient(135deg, #065f46 0%, #0f172a 100%); color:white; border-radius:var(--radius-lg) var(--radius-lg) 0 0; padding:1.25rem 1.5rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+            <i class="fa-solid fa-id-card-clip" style="color:#34d399;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="color:white; margin:0; font-size:1.15rem;">My Patient Profile</h3>
+            <div style="font-size:0.75rem; color:#a7f3d0;">Patient ID: <strong id="profileUserIdDisplay">#PAT</strong> (Private Record)</div>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('patientProfileModal')" style="color:white;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body" style="padding:1.5rem;">
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:0.75rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#166534; display:flex; align-items:center; gap:0.5rem;">
+          <i class="fa-solid fa-shield-halved" style="font-size:1.1rem; color:#059669;"></i>
+          <span><strong>Strict Privacy Protection:</strong> You are accessing your isolated personal patient profile. Healthcare staff and other user profiles cannot be viewed from this account.</span>
+        </div>
+
+        <form onsubmit="handlePatientProfileSubmit(event)">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" id="profileName" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Registered Email (Read-Only)</label>
+              <input type="email" id="profileEmail" class="form-control" readonly style="background:#f1f5f9; cursor:not-allowed;">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="text" id="profilePhone" class="form-control" placeholder="+977 98XXXXXXXX">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Age</label>
+              <input type="number" id="profileAge" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select id="profileGender" class="form-control">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Blood Group</label>
+              <select id="profileBloodGroup" class="form-control">
+                <option value="O+">O+</option>
+                <option value="A+">A+</option>
+                <option value="B+">B+</option>
+                <option value="AB+">AB+</option>
+                <option value="O-">O-</option>
+                <option value="A-">A-</option>
+                <option value="B-">B-</option>
+                <option value="AB-">AB-</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Home Address</label>
+            <input type="text" id="profileAddress" class="form-control" placeholder="Municipality, Ward, City">
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('patientProfileModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Profile Changes</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
