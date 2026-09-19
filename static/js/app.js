@@ -368,12 +368,30 @@ function updateUserHeaderUI() {
     if (loginBtn) loginBtn.style.display = "none";
     const regBtn = document.getElementById("headerRegisterBtn");
     if (regBtn) regBtn.style.display = "none";
+    const profileBtn = document.getElementById("headerProfileBtn");
+    if (profileBtn) profileBtn.style.display = (AppState.currentUser.role === "patient") ? "inline-flex" : "none";
     if (logoutBtn) logoutBtn.style.display = "inline-flex";
+
+    // Populate Patient Identity Overview Card in My Health Vault (view-records)
+    const cardName = document.getElementById("patientCardName");
+    const cardId = document.getElementById("patientCardId");
+    const cardEmail = document.getElementById("patientCardEmail");
+    const cardPhone = document.getElementById("patientCardPhone");
+    const cardBlood = document.getElementById("patientCardBlood");
+    const cardAvatar = document.getElementById("patientCardAvatar");
+    if (cardName) cardName.textContent = AppState.currentUser.name;
+    if (cardId) cardId.textContent = `#PAT-${AppState.currentUser.id || 1}`;
+    if (cardEmail) cardEmail.textContent = AppState.currentUser.email || "";
+    if (cardPhone) cardPhone.textContent = AppState.currentUser.phone || "Not provided";
+    if (cardBlood) cardBlood.textContent = AppState.currentUser.blood_group || "O+";
+    if (cardAvatar && AppState.currentUser.avatar) cardAvatar.src = AppState.currentUser.avatar;
   } else {
     if (badgeSection) badgeSection.style.display = "none";
     if (loginBtn) loginBtn.style.display = "inline-flex";
     const regBtn = document.getElementById("headerRegisterBtn");
     if (regBtn) regBtn.style.display = "inline-flex";
+    const profileBtn = document.getElementById("headerProfileBtn");
+    if (profileBtn) profileBtn.style.display = "none";
     if (logoutBtn) logoutBtn.style.display = "none";
   }
 
@@ -1051,3 +1069,31 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (AppState.currentUser && typeof loadServices === "function") await loadServices();
   if (AppState.currentUser) updateWorkflowStepper(2);
 });
+
+// ==========================================================================
+// Fail-safe State Synchronization Helpers (Ensures cross-role consistency)
+// ==========================================================================
+function getLocalBookings() {
+  try {
+    return JSON.parse(localStorage.getItem("hc_local_bookings") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalBooking(appData) {
+  try {
+    const list = getLocalBookings();
+    // Filter out if same appointment_number already exists
+    const filtered = list.filter(item => item.appointment_number !== appData.appointment_number && item.id !== appData.id);
+    filtered.unshift(appData);
+    localStorage.setItem("hc_local_bookings", JSON.stringify(filtered));
+  } catch (e) {
+    console.error("Local booking save failed", e);
+  }
+}
+
+window.loadAppointments = async function() {
+  if (typeof loadAdminAppointments === "function") await loadAdminAppointments();
+  if (typeof loadPatientRecords === "function") await loadPatientRecords();
+};

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Home Healthcare Management System - Admin Module (Step 4 & Issue Management)
  * Manages Dispatch, Staff Assignment, Status Tracking, and Issue Resolution
  */
@@ -31,7 +31,7 @@ async function loadAdminStats() {
     if (totalEl) totalEl.textContent = s.total_appointments;
     if (pendingEl) pendingEl.textContent = s.pending_appointments;
     if (completedEl) completedEl.textContent = s.completed_appointments;
-    if (revEl) revEl.textContent = `$${s.total_revenue.toFixed(2)}`;
+    if (revEl) revEl.textContent = formatNpr(s.total_revenue);
     if (issuesEl) issuesEl.textContent = s.open_issues;
   }
 }
@@ -51,12 +51,42 @@ async function loadAdminAppointments() {
   const tbody = document.getElementById("adminAppointmentsTableBody");
   if (!tbody) return;
 
-  if (!data.success || data.appointments.length === 0) {
+  let appointments = (data && data.success && Array.isArray(data.appointments)) ? [...data.appointments] : [];
+
+  // Merge locally stored bookings for cross-serverless and immediate admin visibility
+  if (typeof getLocalBookings === "function") {
+    try {
+      const localBookings = getLocalBookings();
+      const existingNums = new Set(appointments.map(a => a.appointment_number));
+      const unSynced = [];
+      for (const lb of localBookings) {
+        if (!existingNums.has(lb.appointment_number)) {
+          appointments.unshift(lb);
+          unSynced.push(lb);
+        }
+      }
+      if (unSynced.length > 0) {
+        apiRequest("/api/appointments/sync", "POST", { appointments: unSynced }).catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Local bookings sync failed:", e);
+    }
+  }
+
+  // Update admin stat indicators with current appointment counts
+  const totalEl = document.getElementById("adminStatTotal");
+  const pendingEl = document.getElementById("adminStatPending");
+  if (totalEl && appointments.length > 0) totalEl.textContent = appointments.length;
+  if (pendingEl && appointments.length > 0) {
+    pendingEl.textContent = appointments.filter(a => a.status === "Pending").length;
+  }
+
+  if (appointments.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#94a3b8;">No appointments found.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = data.appointments.map(app => {
+  tbody.innerHTML = appointments.map(app => {
     let badgeClass = "badge-pending";
     if (app.status === "Assigned") badgeClass = "badge-assigned";
     if (app.status === "In-Progress") badgeClass = "badge-in-progress";
@@ -110,7 +140,7 @@ function openAssignModal(appId) {
     <option value="">-- Choose Certified Healthcare Provider --</option>
     ${allHealthcareStaff.map(s => `
       <option value="${s.id}">
-        ${s.name} (${s.specialization}) - Rating: ⭐${s.rating} | Exp: ${s.experience_years} yrs
+        ${s.name || 'Healthcare Professional'}${s.specialization ? ` - ${s.specialization}` : ''}
       </option>
     `).join("")}
   `;

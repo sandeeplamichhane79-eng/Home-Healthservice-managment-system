@@ -21,12 +21,40 @@ async function loadPatientAppointmentsHistory() {
   const container = document.getElementById("patientAppointmentsHistoryList");
   if (!container) return;
 
-  if (!data.success || data.appointments.length === 0) {
+  let appointments = (data && data.success && Array.isArray(data.appointments)) ? [...data.appointments] : [];
+
+  // Merge locally stored bookings for instant visibility after booking
+  if (typeof getLocalBookings === "function") {
+    try {
+      const localBookings = getLocalBookings();
+      const existingNums = new Set(appointments.map(a => a.appointment_number));
+      for (const lb of localBookings) {
+        if (!existingNums.has(lb.appointment_number)) {
+          appointments.unshift(lb);
+        }
+      }
+    } catch (e) {
+      console.warn("Local bookings read failed:", e);
+    }
+  }
+
+  // Filter for logged-in patient if applicable
+  if (AppState && AppState.currentUser && AppState.currentUser.role === 'Patient') {
+    const u = AppState.currentUser;
+    appointments = appointments.filter(app => {
+      if (!app.patient_id && !app.patient_email && !app.patient_name) return true;
+      return (app.patient_id && app.patient_id === u.id) ||
+             (app.patient_email && app.patient_email.toLowerCase() === (u.email || '').toLowerCase()) ||
+             (app.patient_name && u.name && app.patient_name.toLowerCase().includes(u.name.toLowerCase()));
+    });
+  }
+
+  if (appointments.length === 0) {
     container.innerHTML = `<div style="text-align:center; padding:3rem; color:#94a3b8;"><i class="fa-solid fa-folder-open" style="font-size:2.5rem; margin-bottom:0.75rem; display:block;"></i>No past health records or appointments found.</div>`;
     return;
   }
 
-  container.innerHTML = data.appointments.map(app => {
+  container.innerHTML = appointments.map(app => {
     let badgeClass = "badge-pending";
     if (app.status === "Assigned") badgeClass = "badge-assigned";
     if (app.status === "In-Progress") badgeClass = "badge-in-progress";
@@ -112,10 +140,10 @@ async function openPaymentModal(appId) {
   const total = basePrice + consumables + tax;
 
   document.getElementById("payServiceTitle").textContent = app.service_title;
-  document.getElementById("payBasePrice").textContent = `$${basePrice.toFixed(2)}`;
-  document.getElementById("payConsumables").textContent = `$${consumables.toFixed(2)}`;
-  document.getElementById("payTax").textContent = `$${tax.toFixed(2)}`;
-  document.getElementById("payTotalAmount").textContent = `$${total.toFixed(2)}`;
+  document.getElementById("payBasePrice").textContent = formatNpr(basePrice);
+  document.getElementById("payConsumables").textContent = formatNpr(consumables);
+  document.getElementById("payTax").textContent = formatNpr(tax);
+  document.getElementById("payTotalAmount").textContent = formatNpr(total);
 
   selectPaymentMethod("online_card");
   updateWorkflowStepper(7);
@@ -242,6 +270,55 @@ function drawMetricLine(ctx, dataPoints, width, height, color, label, minVal, ma
 // ==========================================================================
 // Step 8: Printable Digital Prescription & Invoice Modals
 // ==========================================================================
+async function viewAppointmentFullModal(appId) {
+  const data = await apiRequest(`/api/appointments/${appId}`);
+  if (!data.success) {
+    showToast(data.message || "Unable to load appointment summary.", "error");
+    return;
+  }
+
+  const app = data.appointment;
+  const container = document.getElementById("prescriptionModalContent");
+  const modalTitle = document.querySelector("#prescriptionModal .modal-title");
+  if (!container) return;
+
+  if (modalTitle) {
+    modalTitle.innerHTML = '<i class="fa-solid fa-file-medical" style="color:var(--primary);"></i> Appointment Summary';
+  }
+
+  container.innerHTML = `
+    <div style="display:grid; gap:1rem;">
+      <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start;">
+        <div>
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Appointment</div>
+          <h2 style="font-size:1.25rem; color:var(--dark); margin-top:0.2rem;">${app.service_title || "Home Healthcare Visit"}</h2>
+          <div style="color:var(--text-muted);">#${app.appointment_number || app.id}</div>
+        </div>
+        <span class="badge badge-completed">${app.status || "Completed"}</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:0.75rem; background:#f8fafc; border-radius:var(--radius-md); padding:1rem;">
+        <div><strong>Patient</strong><br>${app.patient_name || "N/A"}</div>
+        <div><strong>Date & Time</strong><br>${app.appointment_date || "N/A"} | ${app.time_slot || "N/A"}</div>
+        <div><strong>Healthcare Provider</strong><br>${app.professional_name || "Pending Assignment"}</div>
+        <div><strong>Visit Address</strong><br>${app.address || "N/A"}</div>
+      </div>
+
+      <div class="card-panel" style="padding:1rem;">
+        <h3 style="font-size:1rem; margin-bottom:0.45rem; color:var(--primary);"><i class="fa-solid fa-notes-medical"></i> Visit Notes</h3>
+        <p style="color:var(--text-main);">${app.symptoms || "No symptoms or notes recorded."}</p>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; flex-wrap:wrap;">
+        ${app.prescription ? `<button type="button" class="btn btn-primary btn-sm" onclick="viewPrescriptionModal(${app.id})"><i class="fa-solid fa-prescription"></i> View Prescription</button>` : ""}
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('prescriptionModal')">Close</button>
+      </div>
+    </div>
+  `;
+
+  openModal("prescriptionModal");
+}
+
 async function viewPrescriptionModal(appId) {
   const data = await apiRequest(`/api/appointments/${appId}`);
   if (!data.success) return;
@@ -259,6 +336,10 @@ async function viewPrescriptionModal(appId) {
 
   const container = document.getElementById("prescriptionModalContent");
   if (!container) return;
+  const modalTitle = document.querySelector("#prescriptionModal .modal-title");
+  if (modalTitle) {
+    modalTitle.innerHTML = '<i class="fa-solid fa-prescription" style="color:var(--primary);"></i> Digital Medical Prescription';
+  }
 
   container.innerHTML = `
     <div class="printable-area" style="border: 2px solid #cbd5e1; border-radius:var(--radius-lg); padding:2rem; background:white; font-family:sans-serif;">
@@ -321,7 +402,7 @@ async function viewPrescriptionModal(appId) {
       <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px dashed #cbd5e1; padding-top:1.5rem;">
         <div style="font-size:0.75rem; color:#64748b;">
           <div style="font-weight:700; color:#0f172a; margin-bottom:0.2rem;"><i class="fa-solid fa-pills" style="color:var(--primary);"></i> Dispensed & Verified By:</div>
-          <div><strong>Pharmacist Chetna</strong> (B.Pharm, Reg #NP-88421)</div>
+          <div><strong>Pharmacist</strong></div>
           <div>Care Nurse: <strong>Rama</strong> (RN)</div>
         </div>
         <div style="text-align:center;">
@@ -395,23 +476,23 @@ async function viewInvoiceModal(appId) {
           <tr style="border-bottom:1px solid #e2e8f0;">
             <td style="padding:0.6rem;"><strong>${app.service_title}</strong> (Home Healthcare Visit)</td>
             <td style="padding:0.6rem; text-align:center;">1</td>
-            <td style="padding:0.6rem; text-align:right;">$${pay.breakdown.base_service.toFixed(2)}</td>
+            <td style="padding:0.6rem; text-align:right;">${formatNpr(pay.breakdown.base_service)}</td>
           </tr>
           <tr style="border-bottom:1px solid #e2e8f0;">
             <td style="padding:0.6rem;">Clinical Consumables & PPE Kit</td>
             <td style="padding:0.6rem; text-align:center;">1</td>
-            <td style="padding:0.6rem; text-align:right;">$${pay.breakdown.consumables.toFixed(2)}</td>
+            <td style="padding:0.6rem; text-align:right;">${formatNpr(pay.breakdown.consumables)}</td>
           </tr>
           <tr style="border-bottom:1px solid #e2e8f0;">
             <td style="padding:0.6rem;">Healthcare Service Tax (5%)</td>
             <td style="padding:0.6rem; text-align:center;">-</td>
-            <td style="padding:0.6rem; text-align:right;">$${pay.breakdown.tax.toFixed(2)}</td>
+            <td style="padding:0.6rem; text-align:right;">${formatNpr(pay.breakdown.tax)}</td>
           </tr>
         </tbody>
         <tfoot>
           <tr>
             <td colspan="2" style="padding:0.8rem; font-size:1.1rem; font-weight:800; text-align:right;">Total Paid:</td>
-            <td style="padding:0.8rem; font-size:1.1rem; font-weight:800; text-align:right; color:#059669;">$${pay.amount.toFixed(2)}</td>
+            <td style="padding:0.8rem; font-size:1.1rem; font-weight:800; text-align:right; color:#059669;">${formatNpr(pay.amount)}</td>
           </tr>
         </tfoot>
       </table>

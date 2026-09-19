@@ -415,5 +415,76 @@ class HomeHealthcareWorkflowTestCase(unittest.TestCase):
         self.assertEqual(patient_login.status_code, 200)
         self.assertTrue(patient_login.get_json()["success"])
 
+    def test_patient_alias_login_and_appointment_sync(self):
+        """Verify patient alias resolution, resilient demo passwords, and appointment sync."""
+        # 1. Alias patient@demo.com should resolve to ram@demo.com
+        self.client.post("/api/auth/logout")
+        alias_login = self.client.post("/api/auth/login", json={
+            "email": "patient@demo.com",
+            "password": "ram123"
+        })
+        self.assertEqual(alias_login.status_code, 200)
+        data = alias_login.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["user"]["email"], "ram@demo.com")
+
+        # 2. Book an appointment as patient
+        service_res = self.client.get("/api/services")
+        service_id = service_res.get_json()["services"][0]["id"]
+
+        booking_res = self.client.post("/api/appointments", json={
+            "service_id": service_id,
+            "appointment_date": "2026-10-25",
+            "time_slot": "10:00 AM - 11:00 AM",
+            "address": "456 Lakeside, Pokhara",
+            "symptoms": "Post-op wound dressing check"
+        })
+        self.assertEqual(booking_res.status_code, 200)
+        book_data = booking_res.get_json()
+        self.assertTrue(book_data["success"])
+        app_id = book_data["appointment_id"]
+        app_num = book_data["appointment_number"]
+
+        # 3. Admin view should list this appointment
+        self.client.post("/api/auth/logout")
+        admin_login = self.client.post("/api/auth/login", json={
+            "email": "sandeep@demo.com",
+            "password": "admin123",
+            "staff_pin": "2026"
+        })
+        self.assertTrue(admin_login.get_json()["success"])
+
+        apps_res = self.client.get("/api/appointments")
+        self.assertEqual(apps_res.status_code, 200)
+        apps_data = apps_res.get_json()
+        self.assertTrue(apps_data["success"])
+        app_nums = [a["appointment_number"] for a in apps_data["appointments"]]
+        self.assertIn(app_num, app_nums)
+
+        # 4. Sync endpoint should seamlessly ingest appointments
+        sync_res = self.client.post("/api/appointments/sync", json={
+            "appointments": [{
+                "appointment_number": "HC-SYNC-9999",
+                "patient_name": "Synced Patient",
+                "patient_phone": "+977 9800000000",
+                "patient_email": "synced@demo.com",
+                "service_title": "Elderly Companion Care",
+                "service_fee": 1200,
+                "appointment_date": "2026-10-26",
+                "time_slot": "02:00 PM - 03:00 PM",
+                "address": "Sync St, Kathmandu",
+                "symptoms": "Assistance needed",
+                "status": "Pending",
+                "current_step": 3
+            }]
+        })
+        self.assertEqual(sync_res.status_code, 200)
+        self.assertTrue(sync_res.get_json()["success"])
+
+        # Check that synced appointment is in appointments list
+        check_apps = self.client.get("/api/appointments")
+        synced_nums = [a["appointment_number"] for a in check_apps.get_json()["appointments"]]
+        self.assertIn("HC-SYNC-9999", synced_nums)
+
 if __name__ == "__main__":
     unittest.main()

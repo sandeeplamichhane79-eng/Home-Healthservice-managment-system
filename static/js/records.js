@@ -21,12 +21,40 @@ async function loadPatientAppointmentsHistory() {
   const container = document.getElementById("patientAppointmentsHistoryList");
   if (!container) return;
 
-  if (!data.success || data.appointments.length === 0) {
+  let appointments = (data && data.success && Array.isArray(data.appointments)) ? [...data.appointments] : [];
+
+  // Merge locally stored bookings for instant visibility after booking
+  if (typeof getLocalBookings === "function") {
+    try {
+      const localBookings = getLocalBookings();
+      const existingNums = new Set(appointments.map(a => a.appointment_number));
+      for (const lb of localBookings) {
+        if (!existingNums.has(lb.appointment_number)) {
+          appointments.unshift(lb);
+        }
+      }
+    } catch (e) {
+      console.warn("Local bookings read failed:", e);
+    }
+  }
+
+  // Filter for logged-in patient if applicable
+  if (AppState && AppState.currentUser && AppState.currentUser.role === 'Patient') {
+    const u = AppState.currentUser;
+    appointments = appointments.filter(app => {
+      if (!app.patient_id && !app.patient_email && !app.patient_name) return true;
+      return (app.patient_id && app.patient_id === u.id) ||
+             (app.patient_email && app.patient_email.toLowerCase() === (u.email || '').toLowerCase()) ||
+             (app.patient_name && u.name && app.patient_name.toLowerCase().includes(u.name.toLowerCase()));
+    });
+  }
+
+  if (appointments.length === 0) {
     container.innerHTML = `<div style="text-align:center; padding:3rem; color:#94a3b8;"><i class="fa-solid fa-folder-open" style="font-size:2.5rem; margin-bottom:0.75rem; display:block;"></i>No past health records or appointments found.</div>`;
     return;
   }
 
-  container.innerHTML = data.appointments.map(app => {
+  container.innerHTML = appointments.map(app => {
     let badgeClass = "badge-pending";
     if (app.status === "Assigned") badgeClass = "badge-assigned";
     if (app.status === "In-Progress") badgeClass = "badge-in-progress";

@@ -228,15 +228,39 @@ async function submitBookingRequest(event) {
     showToast(data.message, "success", 5000);
     closeModal("bookingModal");
     
+    // Save to local storage so it immediately transfers and appears across Admin and Patient sections
+    const newBooking = {
+      id: data.appointment_id,
+      appointment_number: data.appointment_number,
+      patient_id: AppState.currentUser ? AppState.currentUser.id : 1,
+      patient_name: AppState.currentUser ? AppState.currentUser.name : "Patient",
+      patient_phone: (AppState.currentUser && AppState.currentUser.phone) ? AppState.currentUser.phone : emergencyPhone,
+      service_id: selectedServiceForBooking.id,
+      service_title: selectedServiceForBooking.title,
+      service_icon: selectedServiceForBooking.icon || "fa-stethoscope",
+      service_category: selectedServiceForBooking.category || "Medical",
+      service_price: selectedServiceForBooking.price || 65.0,
+      appointment_date: date,
+      time_slot: timeSlot,
+      address: address,
+      symptoms: symptoms || "Routine home healthcare checkup requested.",
+      status: "Pending",
+      current_step: 4,
+      emergency_contact_name: emergencyName,
+      emergency_contact_phone: emergencyPhone,
+      uploaded_docs: uploadedDocumentList.map(d => d.filename)
+    };
+    if (typeof saveLocalBooking === "function") saveLocalBooking(newBooking);
+
     // Update Stepper to Step 4 (Admin Assignment)
     updateWorkflowStepper(4);
 
     // Refresh appointments list
     if (typeof loadAppointments === "function") await loadAppointments();
     if (typeof loadPatientRecords === "function") await loadPatientRecords();
+    if (typeof loadAdminAppointments === "function") await loadAdminAppointments();
     
-    // Suggest switching to Admin tab to simulate assignment
-    showToast("Appointment submitted! Switch to Admin tab to assign a doctor/nurse.", "info", 6000);
+    showToast("Appointment submitted! It is now queued for hospital dispatch and visible in My Health Vault.", "success", 6000);
   } else {
     showToast(data.message || "Failed to submit booking.", "error");
   }
