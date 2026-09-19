@@ -1170,9 +1170,50 @@ function saveLocalBooking(appData) {
   }
 }
 
+function updateLocalBooking(bookingUpdates) {
+  try {
+    const list = getLocalBookings();
+    let found = false;
+    const updatedList = list.map(item => {
+      const matchId = bookingUpdates.id && item.id && (String(item.id) === String(bookingUpdates.id));
+      const matchNum = bookingUpdates.appointment_number && item.appointment_number && (item.appointment_number === bookingUpdates.appointment_number);
+      if (matchId || matchNum) {
+        found = true;
+        return { ...item, ...bookingUpdates };
+      }
+      return item;
+    });
+
+    if (!found && (bookingUpdates.id || bookingUpdates.appointment_number)) {
+      updatedList.unshift(bookingUpdates);
+    }
+
+    localStorage.setItem("hc_local_bookings", JSON.stringify(updatedList));
+
+    // Also trigger background sync to backend
+    try {
+      fetch("/api/appointments/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appointments: updatedList })
+      }).catch(e => console.warn("Background sync error:", e));
+    } catch (e) {}
+
+    return true;
+  } catch (e) {
+    console.error("updateLocalBooking failed", e);
+    return false;
+  }
+}
+
+window.getLocalBookings = getLocalBookings;
+window.saveLocalBooking = saveLocalBooking;
+window.updateLocalBooking = updateLocalBooking;
+
 window.loadAppointments = async function() {
   if (typeof loadAdminAppointments === "function") await loadAdminAppointments();
   if (typeof loadPatientRecords === "function") await loadPatientRecords();
+  if (typeof loadProfessionalDashboard === "function") await loadProfessionalDashboard();
 };
 
 function getLocalRegisteredPatients() {

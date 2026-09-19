@@ -571,5 +571,141 @@ class HomeHealthcareWorkflowTestCase(unittest.TestCase):
         self.assertTrue(login_restored.get_json()["success"])
         self.assertEqual(login_restored.get_json()["user"]["name"], "Restored Patient")
 
+    def test_admin_assignment_staff_dashboard_and_patient_response_workflow(self):
+        """
+        Verify:
+        1. Patient books an appointment.
+        2. Admin views appointments and assigns a doctor/nurse.
+        3. Assigned staff logs in and sees the visit on their dashboard.
+        4. Staff responds with ETA and direct clinical message to patient.
+        5. Patient sees the staff response and ETA in their health records.
+        6. Staff checks in and completes clinical service.
+        """
+        # Step 1: Patient logs in and creates appointment
+        self.client.post("/api/auth/logout")
+        pat_login = self.client.post("/api/auth/login", json={
+            "email": "ram@demo.com",
+            "password": "ram123"
+        })
+        self.assertTrue(pat_login.get_json()["success"])
+        patient_id = pat_login.get_json()["user"]["id"]
+
+        book_res = self.client.post("/api/appointments", json={
+            "service_id": 1,
+            "appointment_date": "2026-10-01",
+            "time_slot": "10:00 AM - 11:00 AM",
+            "address": "Baneshwor, Kathmandu",
+            "symptoms": "Post-surgery wound care and general health check",
+            "emergency_contact_name": "Sita",
+            "emergency_contact_phone": "+977 9801122334"
+        })
+        self.assertEqual(book_res.status_code, 200)
+        app_id = book_res.get_json()["appointment_id"]
+        app_num = book_res.get_json()["appointment_number"]
+
+        # Step 2: Admin logs in and assigns Dr. Sunil (or doctor)
+        self.client.post("/api/auth/logout")
+        admin_login = self.client.post("/api/auth/login", json={
+            "email": "sandeep@demo.com",
+            "password": "admin123",
+            "staff_pin": "2026"
+        })
+        self.assertTrue(admin_login.get_json()["success"])
+
+        # Fetch staff list to get Dr. Sunil's ID
+        staff_res = self.client.get("/api/professionals")
+        self.assertTrue(staff_res.get_json()["success"])
+        staff_list = staff_res.get_json()["professionals"]
+        self.assertGreater(len(staff_list), 0)
+        target_staff = staff_list[0]
+        target_staff_id = target_staff["id"]
+        target_staff_name = target_staff["name"]
+
+        # Admin assigns target staff
+        assign_res = self.client.post(f"/api/appointments/{app_id}/assign", json={
+            "professional_id": target_staff_id
+        })
+        self.assertEqual(assign_res.status_code, 200)
+        assign_data = assign_res.get_json()
+        self.assertTrue(assign_data["success"])
+        self.assertEqual(assign_data["appointment"]["status"], "Assigned")
+        self.assertEqual(assign_data["appointment"]["professional_id"], target_staff_id)
+        self.assertIn(target_staff_name, assign_data["appointment"]["staff_response"])
+
+        # Step 3: Assigned staff logs in and views their dashboard
+        self.client.post("/api/auth/logout")
+        staff_login = self.client.post("/api/auth/login", json={
+            "email": target_staff["email"],
+            "password": "doctor123" if "dr." in target_staff["email"].lower() else "nurse123",
+            "staff_pin": "2026"
+        })
+        # If demo password differs, fallback to target_staff or session
+        if not staff_login.get_json()["success"]:
+            staff_login = self.client.post("/api/auth/login", json={
+                "email": target_staff["email"],
+                "password": "pass",
+                "staff_pin": "2026"
+            })
+
+        pro_apps = self.client.get("/api/appointments")
+        self.assertEqual(pro_apps.status_code, 200)
+        assigned_ids = [a["id"] for a in pro_apps.get_json()["appointments"]]
+        self.assertIn(app_id, assigned_ids)
+
+        # Step 4: Staff sends ETA and update directly to patient
+        respond_res = self.client.post(f"/api/appointments/{app_id}/respond", json={
+            "staff_response": "I have reviewed your medical notes and am heading to your home with the wound care kit.",
+            "eta": "20 mins",
+            "status": "On the Way"
+        })
+        self.assertEqual(respond_res.status_code, 200)
+        resp_data = respond_res.get_json()
+        self.assertTrue(resp_data["success"])
+        self.assertEqual(resp_data["appointment"]["status"], "In-Progress")
+        self.assertEqual(resp_data["appointment"]["eta"], "20 mins")
+
+        # Step 5: Patient logs in and verifies receiving staff response and ETA
+        self.client.post("/api/auth/logout")
+        self.client.post("/api/auth/login", json={
+            "email": "ram@demo.com",
+            "password": "ram123"
+        })
+        pat_apps = self.client.get("/api/appointments")
+        self.assertEqual(pat_apps.status_code, 200)
+        found_app = next((a for a in pat_apps.get_json()["appointments"] if a["id"] == app_id), None)
+        self.assertIsNotNone(found_app)
+        self.assertEqual(found_app["status"], "In-Progress")
+        self.assertEqual(found_app["eta"], "20 mins")
+        self.assertEqual(found_app["staff_response"], "I have reviewed your medical notes and am heading to your home with the wound care kit.")
+        self.assertEqual(found_app["professional_name"], target_staff_name)
+
+        # Step 6: Staff starts visit and completes clinical care
+        self.client.post("/api/auth/logout")
+        self.client.post("/api/auth/login", json={
+            "email": target_staff["email"],
+            "password": "doctor123" if "dr." in target_staff["email"].lower() else "nurse123",
+            "staff_pin": "2026"
+        })
+        start_res = self.client.post(f"/api/appointments/{app_id}/start-visit")
+        self.assertEqual(start_res.status_code, 200)
+        self.assertTrue(start_res.get_json()["success"])
+
+        comp_res = self.client.post(f"/api/appointments/{app_id}/complete-service", json={
+            "blood_pressure": "122/80",
+            "pulse_rate": 74,
+            "temperature": 98.4,
+            "spo2": 99,
+            "blood_sugar": 96.0,
+            "respiration_rate": 16,
+            "clinical_notes": "Wound dressing changed. Clean healing observed.",
+            "treatment_given": "Antiseptic cleaning, sterile dressing.",
+            "doctor_name": target_staff_name,
+            "diagnosis": "Healing post-op incision",
+            "medicines": [{"name": "Amoxicillin 500mg", "dosage": "1 tab", "frequency": "1-0-1", "duration": "3 days", "instructions": "After food"}]
+        })
+        self.assertEqual(comp_res.status_code, 200)
+        self.assertTrue(comp_res.get_json()["success"])
+        self.assertEqual(comp_res.get_json()["current_step"], 7)
+
 if __name__ == "__main__":
     unittest.main()

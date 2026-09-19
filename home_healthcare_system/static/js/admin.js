@@ -57,10 +57,22 @@ async function loadAdminAppointments() {
   if (typeof getLocalBookings === "function") {
     try {
       const localBookings = getLocalBookings();
-      const existingNums = new Set(appointments.map(a => a.appointment_number));
+      const appMap = new Map();
+      appointments.forEach(a => appMap.set(a.appointment_number, a));
       const unSynced = [];
       for (const lb of localBookings) {
-        if (!existingNums.has(lb.appointment_number)) {
+        if (appMap.has(lb.appointment_number)) {
+          const existing = appMap.get(lb.appointment_number);
+          if (lb.professional_id && !existing.professional_id) {
+            existing.professional_id = lb.professional_id;
+            existing.professional_name = lb.professional_name || existing.professional_name;
+            existing.professional_specialization = lb.professional_specialization || existing.professional_specialization;
+            existing.status = lb.status || "Assigned";
+            existing.current_step = lb.current_step || 5;
+            existing.staff_response = lb.staff_response || existing.staff_response;
+            existing.eta = lb.eta || existing.eta;
+          }
+        } else {
           appointments.unshift(lb);
           unSynced.push(lb);
         }
@@ -157,16 +169,38 @@ async function submitStaffAssignment(event) {
     return;
   }
 
+  const assignedStaffObj = allHealthcareStaff.find(s => String(s.id) === String(staffId));
+  const staffName = assignedStaffObj ? assignedStaffObj.name : "Healthcare Professional";
+  const staffSpec = assignedStaffObj ? assignedStaffObj.specialization : "Healthcare Provider";
+  const staffPhone = assignedStaffObj ? assignedStaffObj.phone : "";
+  const staffAvatar = assignedStaffObj ? assignedStaffObj.avatar : "";
+
   const data = await apiRequest(`/api/appointments/${currentAppointmentForAssignment}/assign`, "POST", {
-    professional_id: staffId
+    professional_id: parseInt(staffId, 10)
   });
 
   if (data.success) {
-    showToast(data.message, "success");
+    const staffNotice = `${staffName} (${staffSpec}) has been assigned to your appointment. Preparation in progress.`;
+
+    if (typeof updateLocalBooking === "function") {
+      updateLocalBooking({
+        id: currentAppointmentForAssignment,
+        professional_id: parseInt(staffId, 10),
+        professional_name: staffName,
+        professional_specialization: staffSpec,
+        professional_phone: staffPhone,
+        professional_avatar: staffAvatar,
+        status: "Assigned",
+        current_step: 5,
+        staff_response: staffNotice
+      });
+    }
+
+    showToast(data.message || `Assigned to ${staffName}!`, "success");
     closeModal("adminAssignModal");
     updateWorkflowStepper(5);
     await loadAdminDashboard();
-    showToast("Staff assigned! Switch to Healthcare Professional account to conduct the home visit.", "info", 6000);
+    showToast(`Assigned to ${staffName}! Their dashboard has now been updated.`, "info", 6000);
   } else {
     showToast(data.message || "Assignment failed.", "error");
   }

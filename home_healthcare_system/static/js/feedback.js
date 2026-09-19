@@ -4,17 +4,17 @@
  */
 
 let activeFeedbackAppointmentId = null;
-let currentRatingValue = 5;
+let currentRatingValue = 0;
 let isSatisfiedChoice = true;
 let selectedFeedbackTags = new Set(["Punctual", "Compassionate Care"]);
 
 function openFeedbackModal(appId) {
   activeFeedbackAppointmentId = appId;
-  currentRatingValue = 5;
+  currentRatingValue = 0;
   isSatisfiedChoice = true;
   selectedFeedbackTags = new Set(["Punctual", "Compassionate Care"]);
 
-  updateStarsUI(5);
+  updateStarsUI(0);
   updateSatisfactionDecisionUI(true);
   renderFeedbackTagsUI();
   updateWorkflowStepper(9);
@@ -92,6 +92,11 @@ function updateSatisfactionDecisionUI(satisfied) {
 async function submitFeedbackDecision(event) {
   event.preventDefault();
 
+  if (!currentRatingValue || currentRatingValue < 1 || currentRatingValue > 5) {
+    showToast("Please select a rating from 1 to 5 stars before submitting your feedback.", "warning");
+    return;
+  }
+
   const comments = document.getElementById("feedbackComments").value.trim();
   const tagsStr = Array.from(selectedFeedbackTags).join(", ");
 
@@ -106,6 +111,12 @@ async function submitFeedbackDecision(event) {
   if (!fbData.success) {
     showToast(fbData.message || "Failed to submit feedback", "error");
     return;
+  }
+
+  // Reflect the recalculated rating immediately when the reviewed professional is active.
+  if (AppState.currentUser && AppState.currentUser.id === fbData.professional_id) {
+    AppState.currentUser.rating = fbData.professional_rating;
+    renderRoleSpecificViews();
   }
 
   // 2. If Not Satisfied, Submit Issue Resolution Ticket

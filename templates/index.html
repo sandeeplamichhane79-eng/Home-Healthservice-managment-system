@@ -996,6 +996,70 @@
     </div>
   </div>
 
+  <!-- Staff Response & ETA Modal (Direct updates from Doctor/Nurse/Staff to Patient) -->
+  <div id="staffResponseModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:550px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title"><i class="fa-solid fa-paper-plane" style="color:var(--primary);"></i> Send Update / ETA to Patient</h3>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Direct message delivered straight to patient's dashboard</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('staffResponseModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="submitStaffResponse(event)">
+          <div style="background:#f8fafc; border-radius:var(--radius-md); padding:0.85rem 1rem; margin-bottom:1rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <span id="staffRespApptNumber" style="font-weight:700; color:var(--primary); font-size:0.85rem;"></span>
+                <div id="staffRespPatientName" style="font-weight:800; color:var(--dark); font-size:1rem;"></div>
+              </div>
+              <span id="staffRespStatusBadge" class="badge badge-assigned">Assigned</span>
+            </div>
+            <div id="staffRespAddress" style="font-size:0.8rem; color:var(--text-muted); margin-top:0.35rem;"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="font-weight:700;">Visit Status Update</label>
+            <select id="staffRespStatusSelect" class="form-control">
+              <option value="Assigned">Assigned (Preparing visit)</option>
+              <option value="Confirmed">Confirmed (Appointment accepted)</option>
+              <option value="On the Way">On the Way (En route to patient)</option>
+              <option value="In-Progress">In-Progress (At patient home)</option>
+              <option value="Completed">Completed (Visit finished)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="font-weight:700;">Estimated Arrival Time (ETA)</label>
+            <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="setEtaPreset('15 mins')">15 mins</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="setEtaPreset('30 mins')">30 mins</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="setEtaPreset('45 mins')">45 mins</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="setEtaPreset('1 hour')">1 hour</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="setEtaPreset('At scheduled time')">Scheduled time</button>
+            </div>
+            <input type="text" id="staffRespEtaInput" class="form-control" placeholder="e.g. 20-25 mins or 10:30 AM">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="font-weight:700;">Direct Message / Clinical Notice to Patient</label>
+            <div style="display:flex; gap:0.4rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+              <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem;" onclick="setMessagePreset('I am on my way to your location.')">On my way</button>
+              <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem;" onclick="setMessagePreset('Please keep previous prescriptions and reports ready.')">Prepare reports</button>
+              <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem;" onclick="setMessagePreset('I have reviewed your case and will arrive shortly.')">Case reviewed</button>
+            </div>
+            <textarea id="staffRespMessageText" class="form-control" rows="3" placeholder="Enter instructions, notes, or arrival confirmation for the patient..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:0.5rem;">
+            <i class="fa-solid fa-paper-plane"></i> Send Update Directly to Patient
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- 4. Healthcare Professional Visit & Records Console (Step 6) -->
   <div id="completeRecordsModal" class="modal-backdrop">
     <div class="modal-box" style="max-width:800px;">

@@ -27,9 +27,24 @@ async function loadPatientAppointmentsHistory() {
   if (typeof getLocalBookings === "function") {
     try {
       const localBookings = getLocalBookings();
-      const existingNums = new Set(appointments.map(a => a.appointment_number));
+      const appMap = new Map();
+      appointments.forEach(a => appMap.set(a.appointment_number, a));
       for (const lb of localBookings) {
-        if (!existingNums.has(lb.appointment_number)) {
+        if (appMap.has(lb.appointment_number)) {
+          const existing = appMap.get(lb.appointment_number);
+          if (lb.professional_id && !existing.professional_id) {
+            existing.professional_id = lb.professional_id;
+            existing.professional_name = lb.professional_name || existing.professional_name;
+            existing.professional_specialization = lb.professional_specialization || existing.professional_specialization;
+            existing.professional_phone = lb.professional_phone || existing.professional_phone;
+            existing.status = lb.status || "Assigned";
+            existing.current_step = lb.current_step || 5;
+          }
+          if (lb.staff_response) existing.staff_response = lb.staff_response;
+          if (lb.eta) existing.eta = lb.eta;
+          if (lb.status && lb.status !== "Pending") existing.status = lb.status;
+          if (lb.current_step && lb.current_step > (existing.current_step || 0)) existing.current_step = lb.current_step;
+        } else {
           appointments.unshift(lb);
         }
       }
@@ -80,10 +95,29 @@ async function loadPatientAppointmentsHistory() {
           </div>
         </div>
 
+        ${(app.staff_response || app.eta) ? `
+          <div style="background:linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%); border:1.5px solid #86efac; border-radius:var(--radius-md); padding:0.9rem 1.1rem; margin-bottom:1rem; box-shadow:0 2px 6px rgba(16,185,129,0.08);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; flex-wrap:wrap; gap:0.5rem;">
+              <span style="font-weight:800; color:#15803d; font-size:0.85rem; display:flex; align-items:center; gap:0.4rem;">
+                <i class="fa-solid fa-circle-check"></i> Response from Assigned Staff:
+              </span>
+              ${app.eta ? `<span class="badge" style="background:#0284c7; color:#fff; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-clock"></i> ETA: ${app.eta}</span>` : ''}
+            </div>
+            <div style="color:#0f172a; font-size:0.92rem; font-weight:600; line-height:1.4;">
+              ${app.staff_response}
+            </div>
+            ${app.professional_phone ? `
+              <div style="margin-top:0.45rem; font-size:0.8rem; color:#475569;">
+                <i class="fa-solid fa-phone"></i> Provider Contact: <a href="tel:${app.professional_phone}" style="color:#0284c7; font-weight:700;">${app.professional_phone}</a>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
         <div style="background:#f8fafc; border-radius:var(--radius-md); padding:1rem; margin-bottom:1rem; font-size:0.85rem;">
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem;">
             <div>
-              <strong>Healthcare Provider:</strong> ${app.professional_name ? `${app.professional_name} (${app.professional_specialization || ''})` : '<span style="color:#ef4444;">Pending Assignment</span>'}
+              <strong>Healthcare Provider:</strong> ${app.professional_name ? `${app.professional_name} (${app.professional_specialization || 'Assigned Staff'})` : '<span style="color:#ef4444; font-weight:600;"><i class="fa-solid fa-clock"></i> Pending Admin Assignment</span>'}
             </div>
             <div>
               <strong>Visit Location:</strong> ${app.address}

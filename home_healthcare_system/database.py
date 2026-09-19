@@ -101,6 +101,8 @@ def init_db(force_reseed=False):
         emergency_contact_name TEXT,
         emergency_contact_phone TEXT,
         uploaded_docs TEXT,
+        staff_response TEXT,
+        eta TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES users (id),
@@ -209,6 +211,16 @@ def init_db(force_reseed=False):
         FOREIGN KEY (patient_id) REFERENCES users (id)
     );
     """)
+
+    # Safe migration for staff_response and eta columns
+    try:
+        cursor.execute("ALTER TABLE appointments ADD COLUMN staff_response TEXT")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE appointments ADD COLUMN eta TEXT")
+    except Exception:
+        pass
 
     conn.commit()
     seed_updated_users_data(conn)

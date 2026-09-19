@@ -663,12 +663,15 @@ def get_appointments():
            COALESCE(s.icon, 'fa-stethoscope') AS service_icon,
            COALESCE(p.name, 'Patient #' || a.patient_id) AS patient_name,
            COALESCE(p.phone, a.emergency_contact_phone, '') AS patient_phone,
+           COALESCE(p.email, '') AS patient_email,
            COALESCE(p.age, '') AS patient_age,
+           COALESCE(p.gender, '') AS patient_gender,
            COALESCE(p.blood_group, '') AS patient_blood_group,
            pro.name AS professional_name,
            pro.phone AS professional_phone,
            pro.specialization AS professional_specialization,
-           pro.avatar AS professional_avatar
+           pro.avatar AS professional_avatar,
+           pro.rating AS professional_rating
     FROM appointments a
     LEFT JOIN services s ON a.service_id = s.id
     LEFT JOIN users p ON a.patient_id = p.id
@@ -715,12 +718,24 @@ def get_appointment_details(app_id):
 
     cursor.execute("""
     SELECT a.*, 
-           s.title AS service_title, s.category AS service_category, s.price AS service_price, s.duration AS service_duration, s.icon AS service_icon, s.inclusions AS service_inclusions,
-           p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email, p.age AS patient_age, p.gender AS patient_gender, p.blood_group AS patient_blood_group,
-           pro.name AS professional_name, pro.phone AS professional_phone, pro.specialization AS professional_specialization, pro.rating AS professional_rating, pro.avatar AS professional_avatar
+           COALESCE(s.title, 'General Healthcare Service') AS service_title,
+           COALESCE(s.category, 'Medical') AS service_category,
+           COALESCE(s.price, 65.0) AS service_price,
+           COALESCE(s.duration, '45 mins') AS service_duration,
+           COALESCE(s.icon, 'fa-stethoscope') AS service_icon,
+           COALESCE(s.inclusions, '[]') AS service_inclusions,
+           COALESCE(p.name, 'Patient #' || a.patient_id) AS patient_name,
+           COALESCE(p.phone, a.emergency_contact_phone, '') AS patient_phone,
+           COALESCE(p.email, '') AS patient_email,
+           COALESCE(p.age, '') AS patient_age,
+           COALESCE(p.gender, '') AS patient_gender,
+           COALESCE(p.blood_group, '') AS patient_blood_group,
+           pro.name AS professional_name, pro.phone AS professional_phone,
+           pro.specialization AS professional_specialization, pro.rating AS professional_rating,
+           pro.avatar AS professional_avatar
     FROM appointments a
-    JOIN services s ON a.service_id = s.id
-    JOIN users p ON a.patient_id = p.id
+    LEFT JOIN services s ON a.service_id = s.id
+    LEFT JOIN users p ON a.patient_id = p.id
     LEFT JOIN users pro ON a.professional_id = pro.id
     WHERE a.id = ?
     """, (app_id,))
@@ -834,17 +849,22 @@ def sync_appointments():
         if not app_num:
             continue
         cursor.execute("SELECT id FROM appointments WHERE appointment_number = ?", (app_num,))
-        if not cursor.fetchone():
+        row = cursor.fetchone()
+        if not row:
+            raw_pro_id = it.get("professional_id")
+            pro_id = int(raw_pro_id) if raw_pro_id is not None and str(raw_pro_id).isdigit() else None
             cursor.execute("""
             INSERT INTO appointments (
-                appointment_number, patient_id, service_id, status, current_step,
+                appointment_number, patient_id, service_id, professional_id, status, current_step,
                 appointment_date, time_slot, address, symptoms,
-                emergency_contact_name, emergency_contact_phone, uploaded_docs
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                emergency_contact_name, emergency_contact_phone, uploaded_docs,
+                staff_response, eta
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 app_num,
                 it.get("patient_id", 1),
                 it.get("service_id", 1),
+                pro_id,
                 it.get("status", "Pending"),
                 it.get("current_step", 4),
                 it.get("appointment_date", datetime.now().strftime("%Y-%m-%d")),
@@ -853,9 +873,43 @@ def sync_appointments():
                 it.get("symptoms", "Home health checkup"),
                 it.get("emergency_contact_name", ""),
                 it.get("emergency_contact_phone", ""),
-                json.dumps(it.get("uploaded_docs", []))
+                json.dumps(it.get("uploaded_docs", [])),
+                it.get("staff_response", ""),
+                it.get("eta", "")
             ))
             synced += 1
+        else:
+            existing_id = row["id"]
+            raw_pro_id = it.get("professional_id")
+            pro_id = int(raw_pro_id) if raw_pro_id is not None and str(raw_pro_id).isdigit() else None
+            status = it.get("status")
+            step = it.get("current_step")
+            staff_resp = it.get("staff_response")
+            eta = it.get("eta")
+
+            updates = []
+            vals = []
+            if raw_pro_id is not None:
+                updates.append("professional_id = ?")
+                vals.append(pro_id)
+            if status:
+                updates.append("status = ?")
+                vals.append(status)
+            if step is not None:
+                updates.append("current_step = ?")
+                vals.append(int(step))
+            if staff_resp:
+                updates.append("staff_response = ?")
+                vals.append(staff_resp)
+            if eta:
+                updates.append("eta = ?")
+                vals.append(eta)
+
+            if updates:
+                updates.append("updated_at = CURRENT_TIMESTAMP")
+                vals.append(existing_id)
+                cursor.execute(f"UPDATE appointments SET {', '.join(updates)} WHERE id = ?", tuple(vals))
+                synced += 1
     conn.commit()
     conn.close()
     return jsonify({"success": True, "synced": synced})
@@ -866,26 +920,152 @@ def sync_appointments():
 @app.route("/api/appointments/<int:app_id>/assign", methods=["POST"])
 def assign_professional(app_id):
     data = request.get_json() or {}
-    professional_id = data.get("professional_id")
+    raw_professional_id = data.get("professional_id")
 
-    if not professional_id:
+    if not raw_professional_id:
         return jsonify({"success": False, "message": "Please select a Healthcare Professional."}), 400
+
+    try:
+        professional_id = int(raw_professional_id)
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "message": "Invalid Healthcare Professional ID."}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
+    cursor.execute("SELECT id, name, role, specialization, phone, avatar, rating FROM users WHERE id = ?", (professional_id,))
+    prof = cursor.fetchone()
+    prof_name = prof["name"] if prof else f"Staff #{professional_id}"
+    prof_spec = prof["specialization"] if prof and prof["specialization"] else "Healthcare Provider"
+
+    staff_msg = f"{prof_name} ({prof_spec}) has been assigned to your appointment. Preparation in progress."
+
     # Update appointment to Assigned, current_step 5
     cursor.execute("""
     UPDATE appointments 
-    SET professional_id = ?, status = 'Assigned', current_step = 5, updated_at = CURRENT_TIMESTAMP
+    SET professional_id = ?, status = 'Assigned', current_step = 5, staff_response = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-    """, (professional_id, app_id))
+    """, (professional_id, staff_msg, app_id))
     conn.commit()
+
+    cursor.execute("""
+    SELECT a.*, 
+           COALESCE(s.title, 'General Healthcare Service') AS service_title,
+           COALESCE(p.name, 'Patient #' || a.patient_id) AS patient_name,
+           COALESCE(p.phone, a.emergency_contact_phone, '') AS patient_phone,
+           pro.name AS professional_name,
+           pro.phone AS professional_phone,
+           pro.specialization AS professional_specialization,
+           pro.avatar AS professional_avatar,
+           pro.rating AS professional_rating
+    FROM appointments a
+    LEFT JOIN services s ON a.service_id = s.id
+    LEFT JOIN users p ON a.patient_id = p.id
+    LEFT JOIN users pro ON a.professional_id = pro.id
+    WHERE a.id = ?
+    """, (app_id,))
+    updated_app = cursor.fetchone()
     conn.close()
+
+    app_dict = dict(updated_app) if updated_app else None
+    if app_dict and app_dict.get("uploaded_docs"):
+        try:
+            app_dict["uploaded_docs"] = json.loads(app_dict["uploaded_docs"])
+        except Exception:
+            pass
 
     return jsonify({
         "success": True,
-        "message": "Healthcare professional assigned and appointment confirmed successfully!"
+        "message": f"{prof_name} assigned and appointment confirmed successfully!",
+        "appointment": app_dict
+    })
+
+# ==========================================
+# Direct Staff Response & Status Update API
+# ==========================================
+@app.route("/api/appointments/<int:app_id>/respond", methods=["POST"])
+def respond_to_appointment(app_id):
+    user_id = session.get("user_id")
+    role = session.get("role")
+    if not user_id or role not in {"professional", "pharmacist", "admin"}:
+        return jsonify({"success": False, "message": "Access Denied: Healthcare staff only."}), 403
+
+    data = request.get_json() or {}
+    staff_response = (data.get("staff_response") or "").strip()
+    eta = (data.get("eta") or "").strip()
+    new_status = (data.get("status") or "").strip()
+
+    if not staff_response and not eta and not new_status:
+        return jsonify({"success": False, "message": "Please provide an update message or ETA for the patient."}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, patient_id, professional_id, status FROM appointments WHERE id = ?", (app_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"success": False, "message": "Appointment not found."}), 404
+
+    # Allow staff member assigned or admin
+    if role != "admin" and row["professional_id"] and row["professional_id"] != user_id:
+        conn.close()
+        return jsonify({"success": False, "message": "You are not assigned to this appointment."}), 403
+
+    updates = ["updated_at = CURRENT_TIMESTAMP"]
+    params = []
+    if staff_response:
+        updates.append("staff_response = ?")
+        params.append(staff_response)
+    if eta:
+        updates.append("eta = ?")
+        params.append(eta)
+    if new_status:
+        valid_statuses = {'Pending', 'Assigned', 'In-Progress', 'Completed', 'Cancelled', 'Issue Raised'}
+        status_to_save = new_status
+        if new_status in ("On the Way", "En Route", "En-Route"):
+            status_to_save = "In-Progress"
+        elif new_status in ("Confirmed", "Accepted"):
+            status_to_save = "Assigned"
+        
+        if status_to_save in valid_statuses:
+            updates.append("status = ?")
+            params.append(status_to_save)
+
+    params.append(app_id)
+    cursor.execute(f"UPDATE appointments SET {', '.join(updates)} WHERE id = ?", tuple(params))
+    conn.commit()
+
+    cursor.execute("""
+    SELECT a.*, 
+           COALESCE(s.title, 'General Healthcare Service') AS service_title,
+           COALESCE(p.name, 'Patient #' || a.patient_id) AS patient_name,
+           COALESCE(p.phone, a.emergency_contact_phone, '') AS patient_phone,
+           pro.name AS professional_name,
+           pro.phone AS professional_phone,
+           pro.specialization AS professional_specialization,
+           pro.avatar AS professional_avatar,
+           pro.rating AS professional_rating
+    FROM appointments a
+    LEFT JOIN services s ON a.service_id = s.id
+    LEFT JOIN users p ON a.patient_id = p.id
+    LEFT JOIN users pro ON a.professional_id = pro.id
+    WHERE a.id = ?
+    """, (app_id,))
+    updated_app = cursor.fetchone()
+    conn.close()
+
+    app_dict = dict(updated_app) if updated_app else None
+    if app_dict and app_dict.get("uploaded_docs"):
+        try:
+            app_dict["uploaded_docs"] = json.loads(app_dict["uploaded_docs"])
+        except Exception:
+            pass
+
+    return jsonify({
+        "success": True,
+        "message": "Update sent directly to patient successfully!",
+        "appointment": app_dict
     })
 
 # ==========================================
@@ -897,15 +1077,46 @@ def start_visit(app_id):
     cursor = conn.cursor()
     
     now_time = datetime.now().strftime("%I:%M %p")
+    msg = f"Healthcare professional checked in at your location at {now_time}. Home visit in progress."
     cursor.execute("""
     UPDATE appointments 
-    SET status = 'In-Progress', current_step = 5, updated_at = CURRENT_TIMESTAMP
+    SET status = 'In-Progress', current_step = 5, staff_response = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-    """, (app_id,))
+    """, (msg, app_id))
     conn.commit()
+
+    cursor.execute("""
+    SELECT a.*, 
+           COALESCE(s.title, 'General Healthcare Service') AS service_title,
+           COALESCE(p.name, 'Patient #' || a.patient_id) AS patient_name,
+           COALESCE(p.phone, a.emergency_contact_phone, '') AS patient_phone,
+           pro.name AS professional_name,
+           pro.phone AS professional_phone,
+           pro.specialization AS professional_specialization,
+           pro.avatar AS professional_avatar,
+           pro.rating AS professional_rating
+    FROM appointments a
+    LEFT JOIN services s ON a.service_id = s.id
+    LEFT JOIN users p ON a.patient_id = p.id
+    LEFT JOIN users pro ON a.professional_id = pro.id
+    WHERE a.id = ?
+    """, (app_id,))
+    updated_app = cursor.fetchone()
     conn.close()
 
-    return jsonify({"success": True, "message": f"Visit checked-in at {now_time}. Service in progress.", "check_in_time": now_time})
+    app_dict = dict(updated_app) if updated_app else None
+    if app_dict and app_dict.get("uploaded_docs"):
+        try:
+            app_dict["uploaded_docs"] = json.loads(app_dict["uploaded_docs"])
+        except Exception:
+            pass
+
+    return jsonify({
+        "success": True, 
+        "message": f"Visit checked-in at {now_time}. Service in progress.", 
+        "check_in_time": now_time,
+        "appointment": app_dict
+    })
 
 @app.route("/api/appointments/<int:app_id>/complete-service", methods=["POST"])
 def complete_service_records(app_id):
@@ -974,20 +1185,47 @@ def complete_service_records(app_id):
             json.dumps(medicines), special_instructions, follow_up_date
         ))
 
+    summary_resp = f"Visit completed by {doctor_name}. Assessment: {diagnosis}. Clinical vitals and prescription recorded."
     # Advance appointment to Step 7 (Payment required)
     cursor.execute("""
     UPDATE appointments 
-    SET current_step = 7, updated_at = CURRENT_TIMESTAMP
+    SET current_step = 7, staff_response = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-    """, (app_id,))
+    """, (summary_resp, app_id))
 
     conn.commit()
+
+    cursor.execute("""
+    SELECT a.*, 
+           COALESCE(s.title, 'General Healthcare Service') AS service_title,
+           COALESCE(p.name, 'Patient #' || a.patient_id) AS patient_name,
+           COALESCE(p.phone, a.emergency_contact_phone, '') AS patient_phone,
+           pro.name AS professional_name,
+           pro.phone AS professional_phone,
+           pro.specialization AS professional_specialization,
+           pro.avatar AS professional_avatar,
+           pro.rating AS professional_rating
+    FROM appointments a
+    LEFT JOIN services s ON a.service_id = s.id
+    LEFT JOIN users p ON a.patient_id = p.id
+    LEFT JOIN users pro ON a.professional_id = pro.id
+    WHERE a.id = ?
+    """, (app_id,))
+    updated_app = cursor.fetchone()
     conn.close()
+
+    app_dict = dict(updated_app) if updated_app else None
+    if app_dict and app_dict.get("uploaded_docs"):
+        try:
+            app_dict["uploaded_docs"] = json.loads(app_dict["uploaded_docs"])
+        except Exception:
+            pass
 
     return jsonify({
         "success": True,
         "message": "Health records, vitals, and prescription successfully updated! Ready for payment checkout.",
-        "current_step": 7
+        "current_step": 7,
+        "appointment": app_dict
     })
 
 # ==========================================
