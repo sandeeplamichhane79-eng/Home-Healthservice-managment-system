@@ -585,17 +585,20 @@ function openLoginModal() {
     setAppLockedState(true);
   }
   switchAuthTab('login');
-  const patientCard = document.querySelector('.role-login-card[data-login-role="patient"]');
-  if (patientCard) {
-    document.querySelectorAll(".role-login-card").forEach(c => c.classList.remove("active"));
-    patientCard.classList.add("active");
+  if (typeof selectRolePortal === "function") {
+    selectRolePortal('patient');
   }
-  const staffPinGroup = document.getElementById("staffPinGroup");
-  const staffPinInput = document.getElementById("loginStaffPin");
-  const submitBtn = document.getElementById("loginSubmitBtn");
-  if (staffPinGroup) staffPinGroup.style.display = "none";
-  if (staffPinInput) staffPinInput.value = "";
-  if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Patient Portal';
+
+  // Clear password input to avoid phantom or demo password clashes
+  const passInput = document.getElementById("loginPassword");
+  if (passInput) passInput.value = "";
+
+  // Pre-fill email with last patient email if field is empty
+  const emailInput = document.getElementById("loginEmail");
+  if (emailInput && !emailInput.value) {
+    const lastEmail = localStorage.getItem("hc_last_patient_email") || "";
+    if (lastEmail) emailInput.value = lastEmail;
+  }
 
   openModal("authModal");
 }
@@ -675,9 +678,10 @@ function fillLoginCredentials(email, password) {
   showToast(`Credentials filled for ${email}. Click 'Sign In' or hit Enter!`, "info");
 }
 
-function selectRoleLogin(role, email, password) {
-  document.querySelectorAll(".role-login-card").forEach(card => card.classList.toggle("active", card.dataset.loginRole === role));
-  fillLoginCredentials(email, password);
+function selectRolePortal(role) {
+  document.querySelectorAll(".role-login-card").forEach(card => {
+    card.classList.toggle("active", card.dataset.loginRole === role);
+  });
 
   const staffPinGroup = document.getElementById("staffPinGroup");
   const staffPinInput = document.getElementById("loginStaffPin");
@@ -695,6 +699,13 @@ function selectRoleLogin(role, email, password) {
   }
 }
 
+function selectRoleLogin(role, email, password) {
+  selectRolePortal(role);
+  if (email !== undefined && password !== undefined) {
+    fillLoginCredentials(email, password);
+  }
+}
+
 async function handleLoginSubmit(event) {
   event.preventDefault();
   const email = document.getElementById("loginEmail").value.trim();
@@ -708,10 +719,32 @@ async function handleLoginSubmit(event) {
 
   showToast("Verifying credentials...", "info", 1500);
 
-  const data = await apiRequest("/api/auth/login", "POST", { email, password, staff_pin: staffPin });
+  let data = await apiRequest("/api/auth/login", "POST", { email, password, staff_pin: staffPin });
+
+  // Resilient Recovery: If server reports account not found (e.g., fresh serverless container on Vercel),
+  // check locally registered patient profiles and restore them automatically!
+  if (!data.success && data.message && (data.message.includes("Account not found") || data.message.includes("not found"))) {
+    const localPatients = (typeof getLocalRegisteredPatients === "function") ? getLocalRegisteredPatients() : [];
+    const emailLower = email.toLowerCase();
+    const matched = localPatients.find(p => (p.email || "").toLowerCase() === emailLower || (p.phone && p.phone === email));
+    if (matched) {
+      const syncRes = await apiRequest("/api/auth/sync-patient", "POST", {
+        ...matched,
+        password: password
+      });
+      if (syncRes && syncRes.success) {
+        // Retry login with newly synchronized account
+        data = await apiRequest("/api/auth/login", "POST", { email, password, staff_pin: staffPin });
+      }
+    }
+  }
+
   if (data.success) {
     AppState.currentUser = data.user;
     AppState.currentRole = data.user.role;
+    if (data.user.role === "patient" && data.user.email) {
+      localStorage.setItem("hc_last_patient_email", data.user.email.toLowerCase());
+    }
     setAuthenticatedSession(true);
     setAppLockedState(false);
     showToast(`Welcome, ${data.user.name}! Access granted to ${data.user.role.toUpperCase()} section.`, "success");
@@ -767,12 +800,22 @@ async function handleRegisterSubmit(event) {
 
   const data = await apiRequest("/api/auth/register", "POST", payload);
   if (data.success) {
+    if (typeof saveLocalRegisteredPatient === "function") {
+      saveLocalRegisteredPatient(payload);
+    }
     AppState.currentUser = data.user;
     AppState.currentRole = data.user.role;
     setAuthenticatedSession(true);
     setAppLockedState(false);
     showToast(`Registration successful! Logged in as ${data.user.name}.`, "success");
     closeModal("authModal");
+
+    // Pre-populate login form with newly registered email so it's ready upon logout
+    const loginEmailInput = document.getElementById("loginEmail");
+    const loginPassInput = document.getElementById("loginPassword");
+    if (loginEmailInput) loginEmailInput.value = email;
+    if (loginPassInput) loginPassInput.value = "";
+
     updateUserHeaderUI();
     renderRoleSpecificViews();
     if (typeof loadServices === "function") loadServices();
@@ -811,6 +854,15 @@ async function handleResetPasswordSubmit(event) {
     confirm_password: confirmPassword
   });
   if (data.success) {
+    try {
+      const localPatients = (typeof getLocalRegisteredPatients === "function") ? getLocalRegisteredPatients() : [];
+      const idLower = identifier.toLowerCase();
+      const p = localPatients.find(item => item.email.toLowerCase() === idLower || item.phone === identifier);
+      if (p) {
+        p.password = newPassword;
+        localStorage.setItem("hc_registered_patients", JSON.stringify(localPatients));
+      }
+    } catch (e) {}
     showToast(data.message || "Password reset successful.", "success");
     closeModal("forgotPasswordModal");
     openLoginModal();
@@ -831,6 +883,17 @@ async function handleChangePasswordSubmit(event) {
     confirm_password: confirmPassword
   });
   if (data.success) {
+    try {
+      if (AppState.currentUser && AppState.currentUser.email) {
+        const localPatients = (typeof getLocalRegisteredPatients === "function") ? getLocalRegisteredPatients() : [];
+        const userEmail = AppState.currentUser.email.toLowerCase();
+        const p = localPatients.find(item => item.email.toLowerCase() === userEmail);
+        if (p) {
+          p.password = newPassword;
+          localStorage.setItem("hc_registered_patients", JSON.stringify(localPatients));
+        }
+      }
+    } catch (e) {}
     showToast(data.message || "Password updated successfully.", "success");
     closeModal("changePasswordModal");
     document.getElementById("currentPassword").value = "";
@@ -842,14 +905,28 @@ async function handleChangePasswordSubmit(event) {
 }
 
 async function logoutUser() {
+  const lastPatientEmail = (AppState.currentUser && AppState.currentUser.role === 'patient' && AppState.currentUser.email)
+    ? AppState.currentUser.email
+    : (localStorage.getItem("hc_last_patient_email") || "");
+
   await apiRequest("/api/auth/logout", "POST");
   AppState.currentUser = null;
   AppState.currentRole = "patient";
   setAuthenticatedSession(false);
-  showToast("Logged out successfully.", "info");
+  showToast("Logged out successfully. Enter your password to sign in again.", "info");
   updateUserHeaderUI();
   renderRoleSpecificViews();
   openLoginModal();
+
+  if (lastPatientEmail) {
+    const emailInput = document.getElementById("loginEmail");
+    if (emailInput) emailInput.value = lastPatientEmail;
+    const passInput = document.getElementById("loginPassword");
+    if (passInput) {
+      passInput.value = "";
+      setTimeout(() => passInput.focus(), 150);
+    }
+  }
 }
 
 async function switchDemoRole(role) {
@@ -1097,3 +1174,35 @@ window.loadAppointments = async function() {
   if (typeof loadAdminAppointments === "function") await loadAdminAppointments();
   if (typeof loadPatientRecords === "function") await loadPatientRecords();
 };
+
+function getLocalRegisteredPatients() {
+  try {
+    return JSON.parse(localStorage.getItem("hc_registered_patients") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLocalRegisteredPatient(patientData) {
+  try {
+    const list = getLocalRegisteredPatients();
+    const emailLower = (patientData.email || "").trim().toLowerCase();
+    const filtered = list.filter(p => (p.email || "").toLowerCase() !== emailLower);
+    filtered.unshift({
+      name: patientData.name || "",
+      email: emailLower,
+      password: patientData.password || "",
+      phone: patientData.phone || "",
+      age: patientData.age || null,
+      gender: patientData.gender || "Other",
+      blood_group: patientData.blood_group || "",
+      address: patientData.address || "",
+      role: "patient",
+      registered_at: new Date().toISOString()
+    });
+    localStorage.setItem("hc_registered_patients", JSON.stringify(filtered.slice(0, 30)));
+    localStorage.setItem("hc_last_patient_email", emailLower);
+  } catch (e) {
+    console.warn("Could not save local registered patient:", e);
+  }
+}

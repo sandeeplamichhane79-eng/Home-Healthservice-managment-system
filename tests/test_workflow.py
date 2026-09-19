@@ -486,5 +486,90 @@ class HomeHealthcareWorkflowTestCase(unittest.TestCase):
         synced_nums = [a["appointment_number"] for a in check_apps.get_json()["appointments"]]
         self.assertIn("HC-SYNC-9999", synced_nums)
 
+    def test_newly_registered_patient_logout_and_login_cycle(self):
+        """Verify newly registered patient can repeatedly log out and log back in with same credentials."""
+        test_email = f"patient_{uuid.uuid4().hex[:6]}@example.com"
+        test_pass = "MySecretPass1"
+        test_phone = "+977 9812345699"
+
+        # 1. Register new patient
+        reg_res = self.client.post("/api/auth/register", json={
+            "name": "Sunita Shrestha",
+            "email": test_email,
+            "password": test_pass,
+            "phone": test_phone,
+            "age": 32,
+            "gender": "Female",
+            "blood_group": "A+",
+            "address": "Baluwatar, Kathmandu",
+            "role": "patient"
+        })
+        self.assertEqual(reg_res.status_code, 200)
+        self.assertTrue(reg_res.get_json()["success"])
+
+        # 2. Verify initial logged in state
+        me_res = self.client.get("/api/auth/me")
+        self.assertEqual(me_res.status_code, 200)
+        self.assertEqual(me_res.get_json()["user"]["name"], "Sunita Shrestha")
+
+        # 3. Log out
+        logout_res = self.client.post("/api/auth/logout")
+        self.assertEqual(logout_res.status_code, 200)
+
+        # Confirm session is cleared
+        me_after_logout = self.client.get("/api/auth/me")
+        self.assertFalse(me_after_logout.get_json()["success"])
+
+        # 4. Log in again with the EXACT same email and password
+        login1 = self.client.post("/api/auth/login", json={
+            "email": test_email,
+            "password": test_pass
+        })
+        self.assertEqual(login1.status_code, 200)
+        self.assertTrue(login1.get_json()["success"])
+        self.assertEqual(login1.get_json()["user"]["email"], test_email.lower())
+
+        # 5. Log out again and test case-insensitive login (e.g. capitalized email)
+        self.client.post("/api/auth/logout")
+        login_upper = self.client.post("/api/auth/login", json={
+            "email": test_email.upper(),
+            "password": test_pass
+        })
+        self.assertEqual(login_upper.status_code, 200)
+        self.assertTrue(login_upper.get_json()["success"])
+
+        # 6. Log out again and test login by phone number (without country code)
+        self.client.post("/api/auth/logout")
+        login_phone = self.client.post("/api/auth/login", json={
+            "email": "9812345699",
+            "password": test_pass
+        })
+        self.assertEqual(login_phone.status_code, 200)
+        self.assertTrue(login_phone.get_json()["success"])
+
+        # 7. Test sync_patient endpoint (used for cross-serverless container recovery)
+        self.client.post("/api/auth/logout")
+        sync_res = self.client.post("/api/auth/sync-patient", json={
+            "name": "Restored Patient",
+            "email": "restored@example.com",
+            "password": "RestoredPass123",
+            "phone": "+977 9801122334",
+            "age": 40,
+            "gender": "Male",
+            "blood_group": "B+",
+            "address": "Pulchowk, Lalitpur"
+        })
+        self.assertEqual(sync_res.status_code, 200)
+        self.assertTrue(sync_res.get_json()["success"])
+
+        # Immediate login with the synced account
+        login_restored = self.client.post("/api/auth/login", json={
+            "email": "restored@example.com",
+            "password": "RestoredPass123"
+        })
+        self.assertEqual(login_restored.status_code, 200)
+        self.assertTrue(login_restored.get_json()["success"])
+        self.assertEqual(login_restored.get_json()["user"]["name"], "Restored Patient")
+
 if __name__ == "__main__":
     unittest.main()

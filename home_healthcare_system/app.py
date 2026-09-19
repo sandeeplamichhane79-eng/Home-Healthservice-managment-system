@@ -46,7 +46,8 @@ def enforce_session_security():
     public_routes = {
         "index", "uploaded_file", "login", "register",
         "forgot_password", "reset_password", "logout",
-        "demo_switch", "current_user", "get_services", "get_professionals", "upload_document"
+        "demo_switch", "current_user", "get_services", "get_professionals", "upload_document",
+        "sync_appointments", "sync_patient"
     }
     if request.endpoint in public_routes:
         if request.endpoint in {"login", "register", "forgot_password", "reset_password"}:
@@ -75,6 +76,15 @@ def enforce_session_security():
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def normalize_phone(phone_str):
+    if not phone_str:
+        return ""
+    digits = re.sub(r"\D", "", str(phone_str))
+    if digits.startswith("977") and len(digits) > 10:
+        digits = digits[3:]
+    return digits
 
 
 def password_meets_policy(password):
@@ -159,7 +169,7 @@ def register():
     if not name or not email or not password:
         return jsonify({"success": False, "message": "Name, email, and password are required."}), 400
     if not password_meets_policy(password):
-        return jsonify({"success": False, "message": "Password must be at least 8 characters and include uppercase, lowercase, number, and special character."}), 400
+        return jsonify({"success": False, "message": "Password must be at least 6 characters and include letters and numbers."}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -213,23 +223,37 @@ def login():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    row = None
     # Smart alias resolution for demo roles and phone/email matching
     if email in ("patient@demo.com", "patient", "ram@demo.com", "ram"):
         cursor.execute("SELECT * FROM users WHERE LOWER(email) IN ('ram@demo.com', 'patient@demo.com') OR id = 1 LIMIT 1")
+        row = cursor.fetchone()
     elif email in ("admin@demo.com", "admin", "sandeep@demo.com"):
         cursor.execute("SELECT * FROM users WHERE LOWER(email) IN ('sandeep@demo.com', 'admin@demo.com') OR role = 'admin' LIMIT 1")
+        row = cursor.fetchone()
     elif email in ("doctor@demo.com", "dr.binod@demo.com"):
         cursor.execute("SELECT * FROM users WHERE LOWER(email) = 'dr.binod@demo.com' LIMIT 1")
+        row = cursor.fetchone()
     elif email in ("nurse@demo.com", "nurse.rama@demo.com"):
         cursor.execute("SELECT * FROM users WHERE LOWER(email) = 'nurse.rama@demo.com' LIMIT 1")
+        row = cursor.fetchone()
     elif email in ("therapist@demo.com", "therapist.asha@demo.com"):
         cursor.execute("SELECT * FROM users WHERE LOWER(email) = 'therapist.asha@demo.com' LIMIT 1")
+        row = cursor.fetchone()
     elif email in ("pharm@demo.com", "pharmacist@demo.com"):
         cursor.execute("SELECT * FROM users WHERE LOWER(email) IN ('pharm@demo.com', 'pharm.chetna@demo.com') LIMIT 1")
+        row = cursor.fetchone()
     else:
         cursor.execute("SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(phone) = ?", (email, email))
-
-    row = cursor.fetchone()
+        row = cursor.fetchone()
+        if not row:
+            p_digits = normalize_phone(email)
+            if p_digits and len(p_digits) >= 7:
+                cursor.execute("SELECT * FROM users")
+                for u in cursor.fetchall():
+                    if u["phone"] and normalize_phone(u["phone"]) == p_digits:
+                        row = u
+                        break
     conn.close()
 
     if not row:
@@ -286,6 +310,46 @@ def login():
     del user["password"]
 
     return jsonify({"success": True, "message": "Login successful!", "user": user})
+
+@app.route("/api/auth/sync-patient", methods=["POST"])
+def sync_patient():
+    data = request.get_json() or {}
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "").strip()
+    phone = data.get("phone", "").strip()
+    age = data.get("age")
+    gender = data.get("gender", "Other")
+    blood_group = data.get("blood_group", "")
+    address = data.get("address", "")
+    role = "patient"
+
+    if not name or not email or not password:
+        return jsonify({"success": False, "message": "Name, email, and password are required."}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id FROM users WHERE LOWER(email) = ?", (email,))
+        existing = cursor.fetchone()
+        if existing:
+            cursor.execute("""
+                UPDATE users SET name = ?, password = ?, phone = ?, age = ?, gender = ?, blood_group = ?, address = ?
+                WHERE id = ?
+            """, (name, hash_password(password), phone, age, gender, blood_group, address, existing["id"]))
+            user_id = existing["id"]
+        else:
+            cursor.execute("""
+                INSERT INTO users (name, email, password, role, phone, age, gender, blood_group, address)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (name, email, hash_password(password), role, phone, age, gender, blood_group, address))
+            user_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "Patient account synchronized successfully.", "user_id": user_id})
+    except Exception as e:
+        conn.close()
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route("/api/auth/me", methods=["GET"])
 def current_user():

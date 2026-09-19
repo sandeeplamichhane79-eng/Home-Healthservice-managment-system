@@ -580,21 +580,21 @@
         <div id="loginFormSection">
           <form onsubmit="handleLoginSubmit(event)">
             <div class="role-login-grid" aria-label="Choose your portal">
-              <button type="button" class="role-login-card active" data-login-role="patient" onclick="selectRoleLogin('patient', 'ram@demo.com', 'ram123')"><i class="fa-solid fa-user"></i><span>Patient</span></button>
-              <button type="button" class="role-login-card" data-login-role="doctor" onclick="selectRoleLogin('doctor', 'dr.binod@demo.com', 'doctor123')"><i class="fa-solid fa-user-doctor"></i><span>Doctor</span></button>
-              <button type="button" class="role-login-card" data-login-role="nurse" onclick="selectRoleLogin('nurse', 'nurse.rama@demo.com', 'nurse123')"><i class="fa-solid fa-user-nurse"></i><span>Nurse</span></button>
-              <button type="button" class="role-login-card" data-login-role="admin" onclick="selectRoleLogin('admin', 'sandeep@demo.com', 'admin123')"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></button>
-              <button type="button" class="role-login-card" data-login-role="therapist" onclick="selectRoleLogin('therapist', 'therapist.asha@demo.com', 'therapist123')"><i class="fa-solid fa-person-walking"></i><span>Therapist</span></button>
-              <button type="button" class="role-login-card" data-login-role="pharmacist" onclick="selectRoleLogin('pharmacist', 'pharm@demo.com', 'pharm123')"><i class="fa-solid fa-pills"></i><span>Pharmacist</span></button>
+              <button type="button" class="role-login-card active" data-login-role="patient" onclick="selectRolePortal('patient')"><i class="fa-solid fa-user"></i><span>Patient</span></button>
+              <button type="button" class="role-login-card" data-login-role="doctor" onclick="selectRolePortal('doctor')"><i class="fa-solid fa-user-doctor"></i><span>Doctor</span></button>
+              <button type="button" class="role-login-card" data-login-role="nurse" onclick="selectRolePortal('nurse')"><i class="fa-solid fa-user-nurse"></i><span>Nurse</span></button>
+              <button type="button" class="role-login-card" data-login-role="admin" onclick="selectRolePortal('admin')"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></button>
+              <button type="button" class="role-login-card" data-login-role="therapist" onclick="selectRolePortal('therapist')"><i class="fa-solid fa-person-walking"></i><span>Therapist</span></button>
+              <button type="button" class="role-login-card" data-login-role="pharmacist" onclick="selectRolePortal('pharmacist')"><i class="fa-solid fa-pills"></i><span>Pharmacist</span></button>
             </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-envelope"></i> Email Address / Username *</label>
-              <input type="email" id="loginEmail" class="form-control" placeholder="Enter your registered email" value="" required>
+              <input type="email" id="loginEmail" class="form-control" placeholder="Enter your registered email" autocomplete="email" required>
             </div>
             <div class="form-group">
               <label class="form-label"><i class="fa-solid fa-lock"></i> Password *</label>
               <div class="password-input-wrap">
-                <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" value="" required>
+                <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" autocomplete="current-password" required>
                 <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Show password" title="Show password"><i class="fa-solid fa-eye"></i></button>
               </div>
             </div>
