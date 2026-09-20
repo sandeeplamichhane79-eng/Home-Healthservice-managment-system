@@ -71,6 +71,20 @@ function openBookingModal(serviceId) {
   const svc = AppState.services.find(s => s.id === serviceId);
   if (!svc) return;
 
+  // Protected Action Gate: Require login/registration before booking
+  if (!AppState.currentUser) {
+    if (typeof requireAuth === "function") {
+      requireAuth(
+        () => openBookingModal(serviceId),
+        `Please sign in or register to book "${svc.title}". Your booking details will resume immediately.`,
+        "patient"
+      );
+    } else if (typeof openLoginModal === "function") {
+      openLoginModal();
+    }
+    return;
+  }
+
   selectedServiceForBooking = svc;
   uploadedDocumentList = [];
 

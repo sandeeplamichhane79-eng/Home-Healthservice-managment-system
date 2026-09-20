@@ -10,7 +10,8 @@ const AppState = {
   services: [],
   appointments: [],
   selectedAppointment: null,
-  currentStep: 1
+  currentStep: 1,
+  pendingAction: null
 };
 
 function isAuthenticatedSession() {
@@ -329,8 +330,9 @@ async function fetchCurrentUser() {
     AppState.currentUser = null;
     AppState.currentRole = "patient";
     setAuthenticatedSession(false);
-    setAppLockedState(true);
-    openLoginModal();
+    setAppLockedState(false);
+    updateUserHeaderUI();
+    renderRoleSpecificViews();
   }
 }
 
@@ -452,6 +454,8 @@ function renderStaffDashboard(user) {
 
 function renderRoleSpecificViews() {
   const navServices = document.getElementById("navBtnServices");
+  const navDoctors = document.getElementById("navBtnDoctors");
+  const navReviews = document.getElementById("navBtnReviews");
   const navRecords = document.getElementById("navBtnRecords");
   const navProfessional = document.getElementById("navBtnProfessional");
   const navAdmin = document.getElementById("navBtnAdmin");
@@ -460,15 +464,17 @@ function renderRoleSpecificViews() {
   const demoBar = document.querySelector(".demo-role-bar");
 
   if (!AppState.currentUser) {
+    // Guest Exploration Mode: All discovery tabs are accessible
     document.body.classList.remove("patient-session");
     if (demoBar) demoBar.style.display = "flex";
-    if (navServices) navServices.style.display = "flex";
-    if (navRecords) navRecords.style.display = "none";
-    if (navProfessional) navProfessional.style.display = "none";
-    if (navAdmin) navAdmin.style.display = "none";
+    if (navServices) navServices.style.display = "inline-flex";
+    if (navDoctors) navDoctors.style.display = "inline-flex";
+    if (navReviews) navReviews.style.display = "inline-flex";
+    if (navRecords) navRecords.style.display = "inline-flex";
+    if (navProfessional) navProfessional.style.display = "inline-flex";
+    if (navAdmin) navAdmin.style.display = "inline-flex";
     if (heroSection) heroSection.style.display = "block";
     if (roleBanner) roleBanner.innerHTML = "";
-    switchTab("services");
     return;
   }
 
@@ -478,10 +484,12 @@ function renderRoleSpecificViews() {
     // ADMIN SECTION ONLY
     document.body.classList.remove("patient-session");
     if (demoBar) demoBar.style.display = "flex";
-    if (navServices) navServices.style.display = "flex";
+    if (navServices) navServices.style.display = "inline-flex";
+    if (navDoctors) navDoctors.style.display = "inline-flex";
+    if (navReviews) navReviews.style.display = "inline-flex";
     if (navRecords) navRecords.style.display = "none";
     if (navProfessional) navProfessional.style.display = "none";
-    if (navAdmin) navAdmin.style.display = "flex";
+    if (navAdmin) navAdmin.style.display = "inline-flex";
     if (heroSection) heroSection.style.display = "none";
     
     if (roleBanner) {
@@ -505,8 +513,10 @@ function renderRoleSpecificViews() {
     if (demoBar) demoBar.style.display = "flex";
     const portal = renderStaffDashboard(AppState.currentUser);
     if (navServices) navServices.style.display = "none";
+    if (navDoctors) navDoctors.style.display = "none";
+    if (navReviews) navReviews.style.display = "none";
     if (navRecords) navRecords.style.display = "none";
-    if (navProfessional) navProfessional.style.display = "flex";
+    if (navProfessional) navProfessional.style.display = "inline-flex";
     if (navAdmin) navAdmin.style.display = "none";
     if (heroSection) heroSection.style.display = "none";
 
@@ -532,8 +542,10 @@ function renderRoleSpecificViews() {
     const demoBar = document.querySelector(".demo-role-bar");
     if (demoBar) demoBar.style.display = "none";
 
-    if (navServices) navServices.style.display = "flex";
-    if (navRecords) navRecords.style.display = "flex";
+    if (navServices) navServices.style.display = "inline-flex";
+    if (navDoctors) navDoctors.style.display = "inline-flex";
+    if (navReviews) navReviews.style.display = "inline-flex";
+    if (navRecords) navRecords.style.display = "inline-flex";
     if (navProfessional) navProfessional.style.display = "none";
     if (navAdmin) navAdmin.style.display = "none";
     if (heroSection) heroSection.style.display = "block";
@@ -562,10 +574,6 @@ function renderRoleSpecificViews() {
 // ==========================================================================
 function setAppLockedState(isLocked) {
   const topBar = document.querySelector(".demo-role-bar");
-  const navBar = document.querySelector(".navbar");
-  const workflow = document.querySelector(".workflow-section");
-  const mainContent = document.querySelector("main.container");
-
   if (topBar) {
     if (isLocked || (AppState.currentUser && AppState.currentUser.role === "patient")) {
       topBar.style.display = "none";
@@ -573,20 +581,64 @@ function setAppLockedState(isLocked) {
       topBar.style.display = "";
     }
   }
-  if (navBar) navBar.style.display = isLocked ? "none" : "";
-  if (workflow) workflow.style.display = isLocked ? "none" : "";
-  if (mainContent) mainContent.style.display = isLocked ? "none" : "";
-
   document.body.classList.toggle("app-locked", isLocked);
 }
 
-function openLoginModal() {
-  if (!AppState.currentUser) {
-    setAppLockedState(true);
+function requireAuth(actionCallback, intentMessage, targetRole = "patient") {
+  if (AppState.currentUser) {
+    if (typeof actionCallback === "function") {
+      actionCallback();
+    }
+    return true;
   }
+  AppState.pendingAction = actionCallback;
+  openLoginModal(
+    intentMessage || "Please sign in or create an account to access this healthcare feature. Your action will resume automatically.",
+    targetRole
+  );
+  return false;
+}
+
+function handlePostAuthRedirect(user) {
+  if (AppState.pendingAction) {
+    const action = AppState.pendingAction;
+    AppState.pendingAction = null;
+    try {
+      action();
+      return;
+    } catch (e) {
+      console.warn("Post-auth action execution error:", e);
+    }
+  }
+
+  // Default role dashboard redirection
+  if (user.role === "admin") {
+    switchTab("admin");
+  } else if (user.role === "professional" || user.role === "pharmacist") {
+    switchTab("professional");
+  } else {
+    switchTab("services");
+  }
+}
+
+function openLoginModal(intentMessage, targetRole) {
   switchAuthTab('login');
+  const roleToSelect = targetRole || (AppState.currentUser ? AppState.currentUser.role : 'patient');
   if (typeof selectRolePortal === "function") {
-    selectRolePortal('patient');
+    selectRolePortal(roleToSelect);
+  }
+
+  const gateBanner = document.getElementById("authGateNoticeBanner");
+  const gateTitle = document.getElementById("authGateNoticeTitle");
+  const gateText = document.getElementById("authGateNoticeText");
+  if (gateBanner) {
+    if (intentMessage) {
+      gateBanner.style.display = "flex";
+      if (gateTitle) gateTitle.textContent = "Action Requires Sign In";
+      if (gateText) gateText.textContent = intentMessage;
+    } else {
+      gateBanner.style.display = "none";
+    }
   }
 
   // Clear password input to avoid phantom or demo password clashes
@@ -603,8 +655,8 @@ function openLoginModal() {
   openModal("authModal");
 }
 
-function openRegisterModal() {
-  openLoginModal();
+function openRegisterModal(intentMessage) {
+  openLoginModal(intentMessage, 'patient');
   switchAuthTab('register');
 }
 
@@ -755,6 +807,7 @@ async function handleLoginSubmit(event) {
     if (typeof loadAppointments === "function") loadAppointments();
     if (typeof loadPatientRecords === "function") loadPatientRecords();
     updateWorkflowStepper(2);
+    handlePostAuthRedirect(data.user);
   } else {
     setAuthenticatedSession(false);
     showToast(data.message || "Invalid Email or Password.", "error");
@@ -822,6 +875,7 @@ async function handleRegisterSubmit(event) {
     if (typeof loadAppointments === "function") loadAppointments();
     if (typeof loadPatientRecords === "function") loadPatientRecords();
     updateWorkflowStepper(2);
+    handlePostAuthRedirect(data.user);
   } else {
     setAuthenticatedSession(false);
     showToast(data.message || "Registration failed.", "error");
@@ -913,19 +967,17 @@ async function logoutUser() {
   AppState.currentUser = null;
   AppState.currentRole = "patient";
   setAuthenticatedSession(false);
-  showToast("Logged out successfully. Enter your password to sign in again.", "info");
+  setAppLockedState(false);
+  showToast("Logged out successfully. You are now exploring in Guest Mode.", "info");
   updateUserHeaderUI();
   renderRoleSpecificViews();
-  openLoginModal();
+  switchTab("services");
 
   if (lastPatientEmail) {
     const emailInput = document.getElementById("loginEmail");
     if (emailInput) emailInput.value = lastPatientEmail;
     const passInput = document.getElementById("loginPassword");
-    if (passInput) {
-      passInput.value = "";
-      setTimeout(() => passInput.focus(), 150);
-    }
+    if (passInput) passInput.value = "";
   }
 }
 
@@ -970,6 +1022,55 @@ async function switchDemoRole(role) {
 // Navigation & Tab Switching
 // ==========================================================================
 function switchTab(tabName) {
+  // Public tabs: Doctors and Reviews showcase sections
+  if (tabName === "doctors") {
+    const svcView = document.getElementById("view-services");
+    if (svcView) {
+      document.querySelectorAll(".dashboard-view").forEach(v => v.classList.remove("active-view"));
+      svcView.classList.add("active-view");
+    }
+    const docSec = document.getElementById("doctorsShowcaseSection");
+    if (docSec) {
+      docSec.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === "doctors");
+    });
+    return;
+  }
+
+  if (tabName === "reviews") {
+    const svcView = document.getElementById("view-services");
+    if (svcView) {
+      document.querySelectorAll(".dashboard-view").forEach(v => v.classList.remove("active-view"));
+      svcView.classList.add("active-view");
+    }
+    const revSec = document.getElementById("reviewsShowcaseSection");
+    if (revSec) {
+      revSec.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === "reviews");
+    });
+    return;
+  }
+
+  // Protected Actions: require authentication for private/staff sections
+  if (!AppState.currentUser) {
+    if (tabName === "records") {
+      requireAuth(() => switchTab("records"), "Please sign in or register to access your personal Health Vault, medical records, and vitals history.", "patient");
+      return;
+    }
+    if (tabName === "professional") {
+      requireAuth(() => switchTab("professional"), "Healthcare Staff clearance required. Please sign in with staff credentials and Hospital PIN.", "doctor");
+      return;
+    }
+    if (tabName === "admin") {
+      requireAuth(() => switchTab("admin"), "Administrative clearance required. Please sign in with administrator credentials and Security PIN.", "admin");
+      return;
+    }
+  }
+
   // Strict Isolation: Patients cannot view staff or admin tabs
   if (AppState.currentUser && AppState.currentUser.role === "patient" && (tabName === "admin" || tabName === "professional")) {
     showToast("Access Denied: Patient accounts cannot access healthcare staff or admin portals.", "warning");
@@ -1001,6 +1102,89 @@ function switchTab(tabName) {
     loadProfessionalDashboard();
   } else if (tabName === "services" && typeof loadServices === "function") {
     loadServices();
+  }
+}
+
+// Public Showcase Fetch & Render Handlers
+async function loadPublicDoctors() {
+  const container = document.getElementById("publicDoctorsGridContainer");
+  if (!container) return;
+
+  const data = await apiRequest("/api/public/doctors");
+  if (data.success && data.doctors && data.doctors.length > 0) {
+    container.innerHTML = data.doctors.map(doc => `
+      <div class="doctor-card animate-fade-in">
+        <div class="doctor-card-header">
+          <img src="${doc.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=160'}" alt="${doc.name}" class="doctor-avatar">
+          <div class="doctor-info-head">
+            <h4>${doc.name}</h4>
+            <div class="doctor-spec">${doc.specialization || 'Clinical Specialist'}</div>
+          </div>
+        </div>
+        <div class="doctor-meta-row">
+          <span><i class="fa-solid fa-user-graduate" style="color:var(--primary);"></i> ${doc.qualification || 'MBBS, MD'}</span>
+          <span class="doctor-rating"><i class="fa-solid fa-star"></i> ${doc.rating || 5.0}</span>
+        </div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">
+          <i class="fa-solid fa-briefcase-medical"></i> ${doc.experience_years || 8}+ Years Clinical Experience
+        </div>
+        <div class="doctor-card-footer">
+          <button class="btn btn-outline btn-sm" style="width:100%; font-weight:700;" onclick="bookDoctorConsultation(${doc.id}, '${doc.name}')">
+            <i class="fa-solid fa-calendar-check"></i> Book Consultation
+          </button>
+        </div>
+      </div>
+    `).join("");
+  } else {
+    container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:1.5rem; color:var(--text-muted);">Specialist directory available during appointment dispatch.</div>`;
+  }
+}
+
+async function loadPublicReviews() {
+  const container = document.getElementById("publicReviewsGridContainer");
+  if (!container) return;
+
+  const data = await apiRequest("/api/public/reviews");
+  if (data.success && data.reviews && data.reviews.length > 0) {
+    container.innerHTML = data.reviews.map(rev => {
+      const stars = Array(Math.min(5, Math.max(1, rev.rating || 5))).fill('<i class="fa-solid fa-star"></i>').join("");
+      return `
+        <div class="review-card animate-fade-in">
+          <div class="review-stars">${stars}</div>
+          <p class="review-quote">"${rev.comments || 'Professional and compassionate home healthcare visit.'}"</p>
+          <div style="font-size:0.75rem; color:var(--primary-dark); font-weight:600; margin-bottom:0.5rem;">
+            <i class="fa-solid fa-stethoscope"></i> Attending: ${rev.doctor_name || 'Healthcare Professional'}
+          </div>
+          <div class="review-patient-meta">
+            <span class="review-patient-name">
+              <i class="fa-solid fa-circle-check" style="color:#059669;"></i> ${rev.patient_display_name || 'Verified Patient'}
+            </span>
+            <span class="review-service-tag">${rev.service_title || 'Home Visit'}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } else {
+    container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:1.5rem; color:var(--text-muted);">Verified clinical feedback will appear here.</div>`;
+  }
+}
+
+function bookDoctorConsultation(doctorId, doctorName) {
+  const docSvc = (AppState.services && AppState.services.find(s => s.title.toLowerCase().includes("doctor") || s.category.toLowerCase().includes("doctor"))) || (AppState.services && AppState.services[0]);
+  const svcId = docSvc ? docSvc.id : 1;
+
+  if (!AppState.currentUser) {
+    requireAuth(
+      () => {
+        if (typeof openBookingModal === "function") openBookingModal(svcId);
+      },
+      `Please sign in or register to schedule a home consultation with ${doctorName}. Your appointment booking will open immediately.`,
+      "patient"
+    );
+    return;
+  }
+  if (typeof openBookingModal === "function") {
+    openBookingModal(svcId);
   }
 }
 
@@ -1126,7 +1310,7 @@ document.addEventListener("click", (e) => {
 // App Initialization
 document.addEventListener("DOMContentLoaded", async () => {
   setLanguage(localStorage.getItem("preferredLanguage") || "en");
-  setAppLockedState(true);
+  
   const localizationObserver = new MutationObserver(() => {
     localizationObserver.disconnect();
     localizePage();
@@ -1135,16 +1319,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   localizationObserver.observe(document.body, { childList: true, subtree: true });
 
   if (!isAuthenticatedSession()) {
+    // Guest Exploration Mode: open, friendly landing experience
     AppState.currentUser = null;
     AppState.currentRole = "patient";
-    setAppLockedState(true);
-    openLoginModal();
+    setAppLockedState(false);
+    updateUserHeaderUI();
+    renderRoleSpecificViews();
   } else {
     await fetchCurrentUser();
   }
 
-  if (AppState.currentUser && typeof loadServices === "function") await loadServices();
-  if (AppState.currentUser) updateWorkflowStepper(2);
+  // Always load public catalog, verified doctors, and authentic patient reviews
+  if (typeof loadServices === "function") await loadServices();
+  if (typeof loadPublicDoctors === "function") await loadPublicDoctors();
+  if (typeof loadPublicReviews === "function") await loadPublicReviews();
+
+  updateWorkflowStepper(AppState.currentUser ? 2 : 1);
 });
 
 // ==========================================================================

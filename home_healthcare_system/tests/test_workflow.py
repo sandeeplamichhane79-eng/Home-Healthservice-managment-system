@@ -707,5 +707,73 @@ class HomeHealthcareWorkflowTestCase(unittest.TestCase):
         self.assertTrue(comp_res.get_json()["success"])
         self.assertEqual(comp_res.get_json()["current_step"], 7)
 
+    def test_public_exploration_and_protected_action_gates(self):
+        """Test public endpoints allow unauthenticated discovery and protected endpoints require login."""
+        # 1. Ensure logged out
+        self.client.post("/api/auth/logout")
+
+        # 2. Public exploration: Services, Doctors, and Reviews must be accessible without login
+        svc_res = self.client.get("/api/services")
+        self.assertEqual(svc_res.status_code, 200)
+        svc_data = svc_res.get_json()
+        self.assertTrue(svc_data["success"])
+        self.assertGreater(len(svc_data["services"]), 0)
+
+        docs_res = self.client.get("/api/public/doctors")
+        self.assertEqual(docs_res.status_code, 200)
+        docs_data = docs_res.get_json()
+        self.assertTrue(docs_data["success"])
+        self.assertGreater(len(docs_data["doctors"]), 0)
+        # Verify doctor public fields
+        doc = docs_data["doctors"][0]
+        self.assertIn("name", doc)
+        self.assertIn("specialization", doc)
+        self.assertIn("rating", doc)
+
+        revs_res = self.client.get("/api/public/reviews")
+        self.assertEqual(revs_res.status_code, 200)
+        revs_data = revs_res.get_json()
+        self.assertTrue(revs_data["success"])
+        self.assertGreater(len(revs_data["reviews"]), 0)
+        # Verify review public fields
+        rev = revs_data["reviews"][0]
+        self.assertIn("patient_display_name", rev)
+        self.assertIn("rating", rev)
+
+        # 3. Protected actions: Booking without login must be rejected (401)
+        unauth_book = self.client.post("/api/appointments", json={
+            "service_id": svc_data["services"][0]["id"],
+            "appointment_date": "2026-10-15",
+            "time_slot": "10:00 AM - 11:00 AM",
+            "address": "Lazimpat, Kathmandu",
+            "symptoms": "Routine Checkup"
+        })
+        self.assertEqual(unauth_book.status_code, 401)
+
+        # 4. Login as patient and verify booking succeeds through gate
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "ram@demo.com",
+            "password": "ram123"
+        })
+        self.assertEqual(login_res.status_code, 200)
+        self.assertTrue(login_res.get_json()["success"])
+
+        auth_book = self.client.post("/api/appointments", json={
+            "service_id": svc_data["services"][0]["id"],
+            "appointment_date": "2026-10-15",
+            "time_slot": "10:00 AM - 11:00 AM",
+            "address": "Lazimpat, Kathmandu",
+            "symptoms": "Routine Checkup"
+        })
+        self.assertEqual(auth_book.status_code, 200)
+        self.assertTrue(auth_book.get_json()["success"])
+
+        # 5. Logout returns user to guest state
+        logout_res = self.client.post("/api/auth/logout")
+        self.assertEqual(logout_res.status_code, 200)
+        me_res = self.client.get("/api/auth/me")
+        self.assertFalse(me_res.get_json()["success"])
+
 if __name__ == "__main__":
     unittest.main()
+

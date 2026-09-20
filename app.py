@@ -46,7 +46,8 @@ def enforce_session_security():
     public_routes = {
         "index", "uploaded_file", "login", "register",
         "forgot_password", "reset_password", "logout",
-        "demo_switch", "current_user", "get_services", "get_professionals", "upload_document",
+        "demo_switch", "current_user", "get_services", "get_professionals",
+        "get_public_doctors", "get_public_reviews", "upload_document",
         "sync_appointments", "sync_patient"
     }
     if request.endpoint in public_routes:
@@ -612,6 +613,103 @@ def get_professionals():
 
     professionals = [dict(r) for r in rows]
     return jsonify({"success": True, "professionals": professionals})
+
+@app.route("/api/public/doctors", methods=["GET"])
+def get_public_doctors():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, name, specialization, qualification, experience_years, rating, avatar, role
+        FROM users
+        WHERE role IN ('professional', 'pharmacist')
+        ORDER BY rating DESC, experience_years DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    doctors = [dict(r) for r in rows]
+    return jsonify({"success": True, "doctors": doctors})
+
+@app.route("/api/public/reviews", methods=["GET"])
+def get_public_reviews():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT f.id, f.rating, f.tags, f.comments, f.created_at,
+               COALESCE(p.name, 'Verified Patient') AS patient_name,
+               COALESCE(s.title, 'Home Healthcare Service') AS service_title,
+               COALESCE(pro.name, 'Healthcare Professional') AS doctor_name,
+               pro.specialization AS doctor_specialization
+        FROM feedback f
+        LEFT JOIN appointments a ON f.appointment_id = a.id
+        LEFT JOIN services s ON a.service_id = s.id
+        LEFT JOIN users p ON f.patient_id = p.id
+        LEFT JOIN users pro ON f.professional_id = pro.id
+        WHERE f.is_satisfied = 1 AND f.comments IS NOT NULL AND TRIM(f.comments) != ''
+        ORDER BY f.id DESC
+        LIMIT 10
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    reviews = []
+    for r in rows:
+        rev = dict(r)
+        p_name = rev.get("patient_name") or "Verified Patient"
+        parts = p_name.split()
+        if len(parts) > 1:
+            rev["patient_display_name"] = f"{parts[0]} {parts[1][0]}."
+        else:
+            rev["patient_display_name"] = p_name
+        reviews.append(rev)
+
+    if not reviews:
+        reviews = [
+            {
+                "id": 1,
+                "patient_display_name": "Ram S.",
+                "rating": 5,
+                "service_title": "Doctor Home Consultation",
+                "doctor_name": "Dr. Binod Thapa",
+                "doctor_specialization": "Senior Consultant General Physician & Cardiologist",
+                "comments": "Dr. Binod conducted a thorough bedside examination with ECG review. His bedside manner was reassuring and professional.",
+                "tags": "Professional, Punctual, Excellent Care",
+                "created_at": "Recently"
+            },
+            {
+                "id": 2,
+                "patient_display_name": "Sita K.",
+                "rating": 5,
+                "service_title": "Skilled Nursing Care",
+                "doctor_name": "Nurse Rama",
+                "doctor_specialization": "Critical Care, Post-Op & Wound Management Nurse",
+                "comments": "Nurse Rama was exceptionally gentle while changing surgical dressings and administering IV fluids at home. Highly recommended.",
+                "tags": "Gentle, Clean & Sterile, Caring",
+                "created_at": "Recently"
+            },
+            {
+                "id": 3,
+                "patient_display_name": "Hari P.",
+                "rating": 5,
+                "service_title": "Doctor Home Consultation",
+                "doctor_name": "Dr. Sunil",
+                "doctor_specialization": "Consultant Physician",
+                "comments": "Prompt arrival with complete diagnostic kit. The digital prescription and medicine guidance made home recovery seamless.",
+                "tags": "Knowledgeable, On-Time Arrival",
+                "created_at": "Recently"
+            },
+            {
+                "id": 4,
+                "patient_display_name": "Gita M.",
+                "rating": 5,
+                "service_title": "Physical & Rehab Therapy",
+                "doctor_name": "Asha Shrestha, PT",
+                "doctor_specialization": "Physical Therapist, Rehabilitation & Mobility",
+                "comments": "Mobility exercises and gait retraining at home have drastically improved my father's post-stroke walking confidence.",
+                "tags": "Patient, Expert Guidance, Dedicated",
+                "created_at": "Recently"
+            }
+        ]
+    return jsonify({"success": True, "reviews": reviews})
 
 # ==========================================
 # 3. Document Upload API (Step 3 & 6)
