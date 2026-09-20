@@ -145,7 +145,7 @@ async function loadPatientAppointmentsHistory() {
             <button class="btn btn-outline btn-sm" onclick="viewMedicalReportModal(${app.id})">
               <i class="fa-solid fa-file-medical"></i> Lab / Visit Report
             </button>
-            <button class="btn btn-secondary btn-sm" onclick="openFeedbackModal(${app.id})">
+            <button class="btn btn-secondary btn-sm" onclick="openFeedbackModal(${app.id}, ${app.professional_id || 'null'})">
               <i class="fa-solid fa-star"></i> Feedback & Rating (Step 9)
             </button>
           ` : `

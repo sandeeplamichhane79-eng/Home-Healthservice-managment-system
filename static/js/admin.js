@@ -150,11 +150,13 @@ function openAssignModal(appId) {
 
   selectEl.innerHTML = `
     <option value="">-- Choose Certified Healthcare Provider --</option>
-    ${allHealthcareStaff.map(s => `
+    ${allHealthcareStaff.map(s => {
+      const liveRating = (typeof getStaffRating === "function") ? getStaffRating(s.id, s.rating || 4.95) : (s.rating || 4.95);
+      return `
       <option value="${s.id}">
-        ${s.name || 'Healthcare Professional'}${s.specialization ? ` - ${s.specialization}` : ''}
+        ${s.name || 'Healthcare Professional'}${s.specialization ? ` - ${s.specialization}` : ''} (⭐ ${Number(liveRating).toFixed(2)})
       </option>
-    `).join("")}
+    `}).join("")}
   `;
 
   updateWorkflowStepper(4);

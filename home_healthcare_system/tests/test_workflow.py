@@ -774,6 +774,114 @@ class HomeHealthcareWorkflowTestCase(unittest.TestCase):
         me_res = self.client.get("/api/auth/me")
         self.assertFalse(me_res.get_json()["success"])
 
+    def test_all_staff_ratings_displayed_and_dynamic_feedback_fluctuation(self):
+        """Verify rating number is available across all staff roles and dynamically increases/decreases upon feedback."""
+        with app.app_context():
+            init_db(force_reseed=True)
+
+        # 1. Verify /api/public/doctors and /api/professionals returns numeric ratings & review counts for all staff roles
+        doc_res = self.client.get("/api/public/doctors")
+        self.assertEqual(doc_res.status_code, 200)
+        docs = doc_res.get_json()["doctors"]
+        self.assertGreater(len(docs), 0)
+        roles_found = {d.get("role") for d in docs}
+        self.assertIn("professional", roles_found)
+
+        for d in docs:
+            self.assertIn("rating", d)
+            self.assertIsInstance(d["rating"], (int, float))
+            self.assertGreaterEqual(d["rating"], 1.0)
+            self.assertLessEqual(d["rating"], 5.0)
+            self.assertIn("review_count", d)
+            self.assertGreaterEqual(d["review_count"], 4)
+
+        # 2. Authenticate as admin and verify all staff demo switches return rating and review count
+        login_adm0 = self.client.post("/api/auth/login", json={"email": "sandeep@demo.com", "password": "admin123", "staff_pin": "2026"})
+        self.assertEqual(login_adm0.status_code, 200)
+
+        for role_key in ["nurse", "doctor", "therapist", "pharmacist"]:
+            sw_res = self.client.post("/api/auth/demo-switch", json={"role": role_key})
+            self.assertEqual(sw_res.status_code, 200)
+            user_data = sw_res.get_json()["user"]
+            self.assertIn("rating", user_data)
+            self.assertIsInstance(user_data["rating"], (int, float))
+            self.assertIn("review_count", user_data)
+
+        # 3. Create appointment as patient Ram
+        login_pat = self.client.post("/api/auth/login", json={"email": "ram@demo.com", "password": "ram123"})
+        self.assertEqual(login_pat.status_code, 200)
+
+        book_res = self.client.post("/api/appointments", json={
+            "service_id": 1,
+            "appointment_date": "2026-10-25",
+            "time_slot": "10:00 AM - 11:00 AM",
+            "address": "Baluwatar, Kathmandu",
+            "symptoms": "Post-surgery wound dressing"
+        })
+        self.assertEqual(book_res.status_code, 200)
+        app_id = book_res.get_json()["appointment_id"]
+
+        # 4. Admin assigns Nurse Rama (id=4, initial baseline rating 4.95)
+        login_adm = self.client.post("/api/auth/login", json={"email": "sandeep@demo.com", "password": "admin123", "staff_pin": "2026"})
+        self.assertEqual(login_adm.status_code, 200)
+
+        assign_res = self.client.post(f"/api/appointments/{app_id}/assign", json={"professional_id": 4})
+        self.assertEqual(assign_res.status_code, 200)
+
+        # 5. Patient logs in and submits a 1-star review (ghatna paryo)
+        login_pat2 = self.client.post("/api/auth/login", json={"email": "ram@demo.com", "password": "ram123"})
+        self.assertEqual(login_pat2.status_code, 200)
+
+        fb_res_low = self.client.post(f"/api/appointments/{app_id}/feedback", json={
+            "rating": 1,
+            "tags": "Delayed",
+            "comments": "Arrived later than expected",
+            "is_satisfied": False,
+            "professional_id": 4
+        })
+        self.assertEqual(fb_res_low.status_code, 200)
+        fb_data_low = fb_res_low.get_json()
+        self.assertTrue(fb_data_low["success"])
+        new_rating_low = fb_data_low["professional_rating"]
+        self.assertLess(new_rating_low, 4.95, f"Rating should decrease after 1-star feedback, got {new_rating_low}")
+        self.assertEqual(fb_data_low["review_count"], 5)
+        self.assertIn("Rama's clinical rating is now", fb_data_low["message"])
+
+        # 6. Verify public directory immediately reflects the decreased rating
+        doc_res2 = self.client.get("/api/public/doctors")
+        nurse_rama = next(d for d in doc_res2.get_json()["doctors"] if d["id"] == 4)
+        self.assertEqual(nurse_rama["rating"], new_rating_low)
+        self.assertEqual(nurse_rama["review_count"], 5)
+
+        # 7. Create second appointment and submit 5-star review (badhna paryo)
+        book_res2 = self.client.post("/api/appointments", json={
+            "service_id": 2,
+            "appointment_date": "2026-10-26",
+            "time_slot": "02:00 PM - 03:00 PM",
+            "address": "Baluwatar, Kathmandu",
+            "symptoms": "Doctor consultation"
+        })
+        app_id2 = book_res2.get_json()["appointment_id"]
+
+        # Admin assigns Dr. Binod (id=3, initial baseline 4.98)
+        self.client.post("/api/auth/login", json={"email": "sandeep@demo.com", "password": "admin123", "staff_pin": "2026"})
+        self.client.post(f"/api/appointments/{app_id2}/assign", json={"professional_id": 3})
+
+        # Patient submits 5-star review
+        self.client.post("/api/auth/login", json={"email": "ram@demo.com", "password": "ram123"})
+        fb_res_high = self.client.post(f"/api/appointments/{app_id2}/feedback", json={
+            "rating": 5,
+            "tags": "Highly Skilled, Clear Explanations",
+            "comments": "Excellent diagnostic and bedside manner!",
+            "is_satisfied": True,
+            "professional_id": 3
+        })
+        self.assertEqual(fb_res_high.status_code, 200)
+        fb_data_high = fb_res_high.get_json()
+        self.assertTrue(fb_data_high["success"])
+        self.assertGreaterEqual(fb_data_high["professional_rating"], 4.98)
+        self.assertEqual(fb_data_high["review_count"], 6)
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -26,6 +26,40 @@ function setAuthenticatedSession(isAuthenticated) {
   }
 }
 
+function getStaffRatings() {
+  try {
+    return JSON.parse(localStorage.getItem("hc_staff_ratings") || "{}");
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveStaffRating(profId, rating, reviewCount) {
+  try {
+    const ratings = getStaffRatings();
+    ratings[String(profId)] = {
+      rating: Number(rating),
+      review_count: Number(reviewCount || 1),
+      updated_at: new Date().toISOString()
+    };
+    localStorage.setItem("hc_staff_ratings", JSON.stringify(ratings));
+  } catch (e) {
+    console.warn("Could not save staff rating locally:", e);
+  }
+}
+
+function getStaffRating(profId, defaultRating = 4.95) {
+  const ratings = getStaffRatings();
+  if (ratings[String(profId)] && ratings[String(profId)].rating !== undefined) {
+    return ratings[String(profId)].rating;
+  }
+  return defaultRating;
+}
+
+window.getStaffRatings = getStaffRatings;
+window.saveStaffRating = saveStaffRating;
+window.getStaffRating = getStaffRating;
+
 const uiTranslations = {
   "QUICK ROLE ACCESS (1-CLICK TEST):": "छिटो भूमिका पहुँच (एक क्लिक परीक्षण):",
   "Patient": "बिरामी",
@@ -354,6 +388,12 @@ function updateUserHeaderUI() {
       if (AppState.currentUser.specialization) {
         roleDisplay = AppState.currentUser.specialization.split(' ')[0].toUpperCase();
       }
+      if (AppState.currentUser.role === "professional" || AppState.currentUser.role === "pharmacist") {
+        const staffRating = (typeof getStaffRating === "function") 
+          ? getStaffRating(AppState.currentUser.id, AppState.currentUser.rating || 4.95)
+          : (AppState.currentUser.rating || 4.95);
+        roleDisplay += ` ★ ${Number(staffRating).toFixed(2)}`;
+      }
       roleEl.textContent = roleDisplay;
     }
     if (avatarEl) avatarEl.src = AppState.currentUser.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100";
@@ -445,8 +485,32 @@ function renderStaffDashboard(user) {
   const title = document.getElementById("staffDashboardTitle");
   const description = document.getElementById("staffDashboardDescription");
   const intro = document.getElementById("staffDashboardIntro");
+
+  const localRatings = (typeof getStaffRatings === "function") ? getStaffRatings() : {};
+  const staffIdStr = String(user.id || "");
+  let curRating = user.rating;
+  let curCount = user.review_count || 5;
+  if (localRatings[staffIdStr] && localRatings[staffIdStr].rating !== undefined) {
+    curRating = localRatings[staffIdStr].rating;
+    if (localRatings[staffIdStr].review_count) curCount = localRatings[staffIdStr].review_count;
+  }
+  const formattedRating = Number(curRating || 4.95).toFixed(2);
+
   if (navLabel) navLabel.textContent = portal.label;
-  if (title) title.innerHTML = `<i class="fa-solid ${portal.icon}" style="color:${portal.accent};"></i> ${portal.label}`;
+  if (title) {
+    title.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; width:100%;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <i class="fa-solid ${portal.icon}" style="color:${portal.accent};"></i> 
+          <span>${portal.label}</span>
+        </div>
+        <div style="display:inline-flex; align-items:center; gap:0.4rem; background:#fef3c7; border:1px solid #fde68a; border-radius:var(--radius-full); padding:0.35rem 0.85rem; font-weight:800; font-size:0.875rem; color:#92400e; box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+          <i class="fa-solid fa-star" style="color:#f59e0b;"></i>
+          <span>Clinical Rating: <strong id="staffDashboardRatingText">${formattedRating}</strong> / 5.0 (${curCount} Reviews)</span>
+        </div>
+      </div>
+    `;
+  }
   if (description) description.textContent = portal.description;
   if (intro) intro.innerHTML = portal.cards.map(([icon, heading, text]) => `<article class="staff-workflow-card"><h4><i class="fa-solid ${icon}"></i>${heading}</h4><p>${text}</p></article>`).join("");
   return portal;
@@ -520,16 +584,42 @@ function renderRoleSpecificViews() {
     if (navAdmin) navAdmin.style.display = "none";
     if (heroSection) heroSection.style.display = "none";
 
+    const localRatings = (typeof getStaffRatings === "function") ? getStaffRatings() : {};
+    const staffIdStr = String(AppState.currentUser.id || "");
+    let currentRating = AppState.currentUser.rating;
+    let currentReviewsCount = AppState.currentUser.review_count || 5;
+
+    if (localRatings[staffIdStr] && localRatings[staffIdStr].rating !== undefined) {
+      currentRating = localRatings[staffIdStr].rating;
+      if (localRatings[staffIdStr].review_count) {
+        currentReviewsCount = localRatings[staffIdStr].review_count;
+      }
+    }
+    const formattedRating = Number(currentRating || 4.95).toFixed(2);
+
     if (roleBanner) {
       roleBanner.innerHTML = `
-        <div style="background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); color: white; padding: 1rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #10b981;">
+        <div style="background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); color: white; padding: 1.15rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #10b981; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <div style="font-size:0.75rem; color:#34d399; font-weight:700; text-transform:uppercase;">${portal.label} Active</div>
-            <h3 style="margin:0; font-size:1.2rem; font-weight:800;">${portal.label}</h3>
-            <div style="font-size:0.8rem; color:#cbd5e1;">${AppState.currentUser.specialization || 'Registered Healthcare Professional'}</div>
+            <div style="font-size:0.75rem; color:#34d399; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${portal.label} Active • Staff Clinical Portal</div>
+            <h3 style="margin:0.15rem 0; font-size:1.3rem; font-weight:800; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <span>${AppState.currentUser.name}</span>
+              <span class="badge" style="background:rgba(255,255,255,0.15); color:#a7f3d0; font-size:0.75rem; font-weight:600; padding:0.2rem 0.5rem;">${AppState.currentUser.qualification || 'Certified'}</span>
+            </h3>
+            <div style="font-size:0.825rem; color:#cbd5e1;"><i class="fa-solid fa-stethoscope" style="color:#34d399;"></i> ${AppState.currentUser.specialization || 'Registered Healthcare Professional'}</div>
           </div>
-          <div style="text-align:right;">
-            <span class="badge badge-completed" style="font-size:0.8rem;"><i class="fa-solid fa-star" style="color:#f59e0b;"></i> ${portal.label}</span>
+          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+            <!-- Clinical Rating Number Pill -->
+            <div class="staff-rating-pill" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:var(--radius-full); padding:0.45rem 1rem; font-weight:800; font-size:0.95rem; display:inline-flex; align-items:center; gap:0.45rem; box-shadow:0 2px 8px rgba(0,0,0,0.15);" title="Live Staff Rating updated from verified patient feedback">
+              <i class="fa-solid fa-star" style="color:#f59e0b; font-size:1.1rem;"></i>
+              <span style="font-size:0.8rem; font-weight:700; text-transform:uppercase; color:#b45309;">Rating:</span>
+              <span id="staffRatingBadge" style="color:#78350f; font-size:1.05rem;">${formattedRating}</span>
+              <span style="font-size:0.8rem; font-weight:600; color:#b45309;">/ 5.0</span>
+              <span style="font-size:0.75rem; font-weight:700; background:#fde68a; color:#78350f; padding:0.1rem 0.45rem; border-radius:var(--radius-full); margin-left:0.2rem;">
+                <span id="staffReviewsCount">${currentReviewsCount}</span> Reviews
+              </span>
+            </div>
+            <span class="badge badge-assigned" style="font-size:0.8rem; padding:0.45rem 0.75rem;"><i class="fa-solid fa-id-badge"></i> Staff ID #${AppState.currentUser.id}</span>
           </div>
         </div>
       `;
@@ -1112,7 +1202,19 @@ async function loadPublicDoctors() {
 
   const data = await apiRequest("/api/public/doctors");
   if (data.success && data.doctors && data.doctors.length > 0) {
-    container.innerHTML = data.doctors.map(doc => `
+    const localRatings = (typeof getStaffRatings === "function") ? getStaffRatings() : {};
+    container.innerHTML = data.doctors.map(doc => {
+      const staffIdStr = String(doc.id || "");
+      let docRating = doc.rating || 5.0;
+      let reviewCount = doc.review_count || 4;
+      if (localRatings[staffIdStr] && localRatings[staffIdStr].rating !== undefined) {
+        docRating = localRatings[staffIdStr].rating;
+        if (localRatings[staffIdStr].review_count) {
+          reviewCount = localRatings[staffIdStr].review_count;
+        }
+      }
+      const formattedRating = Number(docRating).toFixed(2);
+      return `
       <div class="doctor-card animate-fade-in">
         <div class="doctor-card-header">
           <img src="${doc.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=160'}" alt="${doc.name}" class="doctor-avatar">
@@ -1123,7 +1225,7 @@ async function loadPublicDoctors() {
         </div>
         <div class="doctor-meta-row">
           <span><i class="fa-solid fa-user-graduate" style="color:var(--primary);"></i> ${doc.qualification || 'MBBS, MD'}</span>
-          <span class="doctor-rating"><i class="fa-solid fa-star"></i> ${doc.rating || 5.0}</span>
+          <span class="doctor-rating" title="Clinical Rating: ${formattedRating} / 5.0 (${reviewCount} Reviews)"><i class="fa-solid fa-star"></i> ${formattedRating} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">(${reviewCount})</span></span>
         </div>
         <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">
           <i class="fa-solid fa-briefcase-medical"></i> ${doc.experience_years || 8}+ Years Clinical Experience
@@ -1134,7 +1236,8 @@ async function loadPublicDoctors() {
           </button>
         </div>
       </div>
-    `).join("");
+    `;
+    }).join("");
   } else {
     container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:1.5rem; color:var(--text-muted);">Specialist directory available during appointment dispatch.</div>`;
   }

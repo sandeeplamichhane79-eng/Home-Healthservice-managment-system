@@ -1,15 +1,24 @@
-﻿/**
+/**
  * Home Healthcare Management System - Feedback & Issue Resolution Module (Step 9)
  * Handles 5-Star Ratings, Feedback Tags, Satisfaction Gateway, and Dispute Resolution Tickets
  */
 
 let activeFeedbackAppointmentId = null;
+let activeFeedbackProfessionalId = null;
 let currentRatingValue = 0;
 let isSatisfiedChoice = true;
 let selectedFeedbackTags = new Set(["Punctual", "Compassionate Care"]);
 
-function openFeedbackModal(appId) {
+function openFeedbackModal(appId, profId = null) {
   activeFeedbackAppointmentId = appId;
+  if (profId) {
+    activeFeedbackProfessionalId = profId;
+  } else if (typeof AppState !== "undefined" && Array.isArray(AppState.appointments)) {
+    const found = AppState.appointments.find(a => a.id === appId);
+    activeFeedbackProfessionalId = found ? found.professional_id : null;
+  } else {
+    activeFeedbackProfessionalId = null;
+  }
   currentRatingValue = 0;
   isSatisfiedChoice = true;
   selectedFeedbackTags = new Set(["Punctual", "Compassionate Care"]);
@@ -101,22 +110,46 @@ async function submitFeedbackDecision(event) {
   const tagsStr = Array.from(selectedFeedbackTags).join(", ");
 
   // 1. Submit Base Feedback
-  const fbData = await apiRequest(`/api/appointments/${activeFeedbackAppointmentId}/feedback`, "POST", {
+  const payload = {
     rating: currentRatingValue,
     tags: tagsStr,
     comments: comments,
     is_satisfied: isSatisfiedChoice
-  });
+  };
+  if (activeFeedbackProfessionalId) {
+    payload.professional_id = activeFeedbackProfessionalId;
+  }
+
+  const fbData = await apiRequest(`/api/appointments/${activeFeedbackAppointmentId}/feedback`, "POST", payload);
 
   if (!fbData.success) {
     showToast(fbData.message || "Failed to submit feedback", "error");
     return;
   }
 
-  // Reflect the recalculated rating immediately when the reviewed professional is active.
-  if (AppState.currentUser && AppState.currentUser.id === fbData.professional_id) {
-    AppState.currentUser.rating = fbData.professional_rating;
-    renderRoleSpecificViews();
+  // Persist the updated staff rating and review count locally so that it updates everywhere immediately
+  if (fbData.professional_id) {
+    if (typeof saveStaffRating === "function") {
+      saveStaffRating(fbData.professional_id, fbData.professional_rating, fbData.review_count);
+    }
+    if (typeof allHealthcareStaff !== "undefined" && Array.isArray(allHealthcareStaff)) {
+      const staffMember = allHealthcareStaff.find(s => s.id === fbData.professional_id);
+      if (staffMember) {
+        staffMember.rating = fbData.professional_rating;
+        staffMember.review_count = fbData.review_count;
+      }
+    }
+    if (typeof loadPublicDoctors === "function") {
+      loadPublicDoctors();
+    }
+    // Reflect the recalculated rating immediately when the reviewed professional is currently active
+    if (AppState.currentUser && AppState.currentUser.id === fbData.professional_id) {
+      AppState.currentUser.rating = fbData.professional_rating;
+      AppState.currentUser.review_count = fbData.review_count;
+      if (typeof updateUserHeaderUI === "function") updateUserHeaderUI();
+      if (typeof renderRoleSpecificViews === "function") renderRoleSpecificViews();
+      if (typeof renderStaffDashboard === "function") renderStaffDashboard(AppState.currentUser);
+    }
   }
 
   // 2. If Not Satisfied, Submit Issue Resolution Ticket
@@ -144,7 +177,8 @@ async function submitFeedbackDecision(event) {
     }
   }
 
-  showToast("Thank you for your feedback! The complete 9-step home healthcare workflow is complete.", "success", 5000);
+  const successMessage = fbData.message || `Thank you! Your ${currentRatingValue}-star rating has been recorded.`;
+  showToast(successMessage, "success", 6000);
   closeModal("feedbackModal");
   if (typeof loadPatientRecords === "function") await loadPatientRecords();
 }

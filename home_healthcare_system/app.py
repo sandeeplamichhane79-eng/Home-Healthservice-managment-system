@@ -361,13 +361,19 @@ def current_user():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
     row = cursor.fetchone()
-    conn.close()
-
     if not row:
+        conn.close()
         return jsonify({"success": False, "user": None})
 
     user = dict(row)
     del user["password"]
+    if user.get("role") in ("professional", "pharmacist"):
+        cursor.execute("SELECT COUNT(*) FROM feedback WHERE professional_id = ?", (user_id,))
+        cnt_row = cursor.fetchone()
+        cnt = cnt_row[0] if cnt_row else 0
+        user["review_count"] = 4 + cnt
+    conn.close()
+
     return jsonify({"success": True, "user": user})
 
 @app.route("/api/patient/profile", methods=["GET"])
@@ -563,15 +569,20 @@ def demo_switch():
         cursor.execute("SELECT * FROM users WHERE role IN ('professional', 'pharmacist') LIMIT 1")
     else:  # patient
         cursor.execute("SELECT * FROM users WHERE email = 'ram@demo.com' OR role = 'patient' LIMIT 1")
-
     row = cursor.fetchone()
-    conn.close()
-
     if not row:
+        conn.close()
         return jsonify({"success": False, "message": f"No account found for role {target_role}"}), 404
 
     user = dict(row)
     del user["password"]
+    if user.get("role") in ("professional", "pharmacist"):
+        cursor.execute("SELECT COUNT(*) FROM feedback WHERE professional_id = ?", (user["id"],))
+        cnt_row = cursor.fetchone()
+        cnt = cnt_row[0] if cnt_row else 0
+        user["review_count"] = 4 + cnt
+    conn.close()
+
     session["user_id"] = user["id"]
     session["role"] = user["role"]
 
@@ -607,7 +618,13 @@ def get_professionals():
         return jsonify({"success": False, "message": "Access Denied: Healthcare staff directory is restricted."}), 403
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, email, phone, specialization, qualification, experience_years, rating, avatar FROM users WHERE role = 'professional'")
+    cursor.execute("""
+        SELECT u.id, u.name, u.email, u.phone, u.specialization, u.qualification, u.experience_years, u.rating, u.avatar, u.role,
+               (4 + COALESCE((SELECT COUNT(*) FROM feedback f WHERE f.professional_id = u.id), 0)) AS review_count
+        FROM users u
+        WHERE u.role IN ('professional', 'pharmacist')
+        ORDER BY u.rating DESC, u.experience_years DESC
+    """)
     rows = cursor.fetchall()
     conn.close()
 
@@ -619,10 +636,11 @@ def get_public_doctors():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, name, specialization, qualification, experience_years, rating, avatar, role
-        FROM users
-        WHERE role IN ('professional', 'pharmacist')
-        ORDER BY rating DESC, experience_years DESC
+        SELECT u.id, u.name, u.specialization, u.qualification, u.experience_years, u.rating, u.avatar, u.role,
+               (4 + COALESCE((SELECT COUNT(*) FROM feedback f WHERE f.professional_id = u.id), 0)) AS review_count
+        FROM users u
+        WHERE u.role IN ('professional', 'pharmacist')
+        ORDER BY u.rating DESC, u.experience_years DESC
     """)
     rows = cursor.fetchall()
     conn.close()
@@ -1453,26 +1471,66 @@ def submit_feedback(app_id):
         conn.close()
         return jsonify({"success": False, "message": "Appointment not found."}), 404
 
+    target_prof_id = app_info["professional_id"] if app_info else None
+    if not target_prof_id and data.get("professional_id"):
+        try:
+            target_prof_id = int(data.get("professional_id"))
+        except (ValueError, TypeError):
+            target_prof_id = None
+
+    if not target_prof_id:
+        cursor.execute("SELECT professional_id FROM visit_records WHERE appointment_id = ?", (app_id,))
+        vr = cursor.fetchone()
+        if vr and vr["professional_id"]:
+            target_prof_id = vr["professional_id"]
+
+    if target_prof_id:
+        cursor.execute("UPDATE appointments SET professional_id = ? WHERE id = ?", (target_prof_id, app_id))
+
     cursor.execute("DELETE FROM feedback WHERE appointment_id = ?", (app_id,))
     cursor.execute("""
     INSERT INTO feedback (appointment_id, patient_id, professional_id, rating, tags, comments, is_satisfied)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (app_id, app_info["patient_id"], app_info["professional_id"], rating, tags, comments, is_satisfied))
+    """, (app_id, app_info["patient_id"], target_prof_id, rating, tags, comments, is_satisfied))
 
-    # Keep the professional profile rating in sync with all submitted feedback.
-    updated_rating = None
-    if app_info["professional_id"]:
-        cursor.execute("""
-        SELECT ROUND(AVG(rating), 2)
-        FROM feedback
-        WHERE professional_id = ?
-        """, (app_info["professional_id"],))
-        updated_rating = cursor.fetchone()[0]
-        cursor.execute("""
-        UPDATE users
-        SET rating = ?
-        WHERE id = ?
-        """, (updated_rating, app_info["professional_id"]))
+    # Keep the professional profile rating dynamically in sync with all submitted feedback.
+    updated_rating = float(rating)
+    total_reviews = 1
+    prof_name = "Healthcare Professional"
+
+    if target_prof_id:
+        cursor.execute("SELECT id, name, role, email, rating FROM users WHERE id = ?", (target_prof_id,))
+        prof_row = cursor.fetchone()
+        if prof_row:
+            prof_name = prof_row["name"] or "Healthcare Professional"
+            prof_email = (prof_row["email"] or "").lower()
+            baseline_ratings = {
+                "nurse.rama@demo.com": 4.95,
+                "nurse.chetna@demo.com": 4.95,
+                "dr.binod@demo.com": 4.98,
+                "dr.sunil@demo.com": 4.90,
+                "dr.sahil@demo.com": 4.80,
+                "therapist.asha@demo.com": 4.96,
+                "pharm@demo.com": 4.90
+            }
+            base_r = baseline_ratings.get(prof_email, prof_row["rating"] or 4.90)
+            baseline_weight = 4
+
+            cursor.execute("SELECT COUNT(*), SUM(rating) FROM feedback WHERE professional_id = ?", (target_prof_id,))
+            fb_stats = cursor.fetchone()
+            patient_cnt = fb_stats[0] if fb_stats and fb_stats[0] else 0
+            patient_sum = fb_stats[1] if fb_stats and fb_stats[1] else 0
+
+            total_weight = baseline_weight + patient_cnt
+            updated_rating = round((base_r * baseline_weight + patient_sum) / total_weight, 2)
+            updated_rating = max(1.0, min(5.0, updated_rating))
+            total_reviews = total_weight
+
+            cursor.execute("""
+            UPDATE users
+            SET rating = ?
+            WHERE id = ?
+            """, (updated_rating, target_prof_id))
 
     # Update appointment current_step to 9
     cursor.execute("""
@@ -1487,9 +1545,11 @@ def submit_feedback(app_id):
     return jsonify({
         "success": True,
         "is_satisfied": bool(is_satisfied),
-        "professional_id": app_info["professional_id"],
+        "professional_id": target_prof_id,
+        "professional_name": prof_name,
         "professional_rating": updated_rating,
-        "message": "Thank you! Your feedback has been recorded successfully." if is_satisfied else "Feedback received. You can now raise an issue resolution ticket if unsatisfied."
+        "review_count": total_reviews,
+        "message": f"Thank you! Your {rating}-star rating has been recorded. {prof_name}'s clinical rating is now {updated_rating} ★."
     })
 
 @app.route("/api/appointments/<int:app_id>/issue", methods=["POST"])
