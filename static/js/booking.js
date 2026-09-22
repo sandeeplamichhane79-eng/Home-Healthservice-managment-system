@@ -100,25 +100,174 @@ function openBookingModal(serviceId) {
   dateInput.min = todayStr;
   dateInput.value = todayStr;
 
-  // Auto-fill patient address if logged in
+  // Default patient address to Banke, Nepalgunj
+  const defaultNepalgunjAddress = "Dhamboji Chowk, Nepalgunj-2, Banke";
   if (AppState.currentUser) {
-    document.getElementById("bookingAddress").value = AppState.currentUser.address || "Lazimpat, Kathmandu";
+    document.getElementById("bookingAddress").value = AppState.currentUser.address || defaultNepalgunjAddress;
     document.getElementById("bookingEmergencyName").value = "Sita Sharma (Spouse)";
     document.getElementById("bookingEmergencyPhone").value = "+977 9841000000";
+  } else {
+    document.getElementById("bookingAddress").value = defaultNepalgunjAddress;
   }
 
   renderUploadedFilesList();
   updateWorkflowStepper(3);
   openModal("bookingModal");
+
+  // Initialize or update the interactive Leaflet map for Banke, Nepalgunj
+  setTimeout(() => {
+    initOrUpdateBookingMap(28.0560, 81.6210, document.getElementById("bookingAddress").value);
+  }, 250);
+}
+
+// ==========================================================================
+// Banke, Nepalgunj Interactive Map Logic (Leaflet.js)
+// ==========================================================================
+let bookingMap = null;
+let bookingMarker = null;
+
+const NEPALGUNJ_LANDMARKS = [
+  { name: "Dhamboji Chowk", lat: 28.0560, lng: 81.6210, ward: "Ward 2" },
+  { name: "Tribhuvan Chowk", lat: 28.0435, lng: 81.6150, ward: "Ward 1" },
+  { name: "BP Chowk", lat: 28.0482, lng: 81.6262, ward: "Ward 4" },
+  { name: "Bageshwori Temple Area", lat: 28.0400, lng: 81.6230, ward: "Ward 3" },
+  { name: "Karkando", lat: 28.0670, lng: 81.6190, ward: "Ward 18" },
+  { name: "Pushpalal Chowk / Surkhet Road", lat: 28.0520, lng: 81.6200, ward: "Ward 2" },
+  { name: "Kohalpur Chowk", lat: 28.1880, lng: 81.7040, ward: "Kohalpur" }
+];
+
+function getNepalgunjAreaHint(lat, lng) {
+  let closest = NEPALGUNJ_LANDMARKS[0];
+  let minDist = 9999;
+  NEPALGUNJ_LANDMARKS.forEach(lm => {
+    const d = Math.hypot(lm.lat - lat, lm.lng - lng);
+    if (d < minDist) {
+      minDist = d;
+      closest = lm;
+    }
+  });
+  return `${closest.name}, ${closest.ward}, Nepalgunj, Banke`;
+}
+
+function initOrUpdateBookingMap(lat, lng, addressText) {
+  lat = parseFloat(lat) || 28.0560;
+  lng = parseFloat(lng) || 81.6210;
+
+  const latInput = document.getElementById("bookingLatitude");
+  const lngInput = document.getElementById("bookingLongitude");
+  const badgeEl = document.getElementById("bookingCoordsBadge");
+
+  if (latInput) latInput.value = lat.toFixed(6);
+  if (lngInput) lngInput.value = lng.toFixed(6);
+  if (badgeEl) badgeEl.textContent = `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E`;
+
+  if (typeof L === "undefined") {
+    console.warn("Leaflet library not loaded yet.");
+    return;
+  }
+
+  const container = document.getElementById("bookingMap");
+  if (!container) return;
+
+  if (!bookingMap) {
+    bookingMap = L.map("bookingMap", {
+      center: [lat, lng],
+      zoom: 14,
+      scrollWheelZoom: true
+    });
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(bookingMap);
+
+    bookingMarker = L.marker([lat, lng], { draggable: true }).addTo(bookingMap);
+
+    bookingMarker.on("dragend", function () {
+      const pos = bookingMarker.getLatLng();
+      onMapLocationSelected(pos.lat, pos.lng);
+    });
+
+    bookingMap.on("click", function (e) {
+      bookingMarker.setLatLng(e.latlng);
+      onMapLocationSelected(e.latlng.lat, e.latlng.lng);
+    });
+  } else {
+    bookingMap.setView([lat, lng], 14);
+    if (bookingMarker) {
+      bookingMarker.setLatLng([lat, lng]);
+    }
+  }
+
+  const popupText = addressText || getNepalgunjAreaHint(lat, lng);
+  bookingMarker.bindPopup(`<b><i class="fa-solid fa-house-user"></i> Patient Home</b><br>${popupText}<br><small style="color:#0284c7;">${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E</small>`).openPopup();
+
+  setTimeout(() => {
+    if (bookingMap) bookingMap.invalidateSize();
+  }, 200);
+}
+
+function onMapLocationSelected(lat, lng) {
+  const latInput = document.getElementById("bookingLatitude");
+  const lngInput = document.getElementById("bookingLongitude");
+  const badgeEl = document.getElementById("bookingCoordsBadge");
+  const addrInput = document.getElementById("bookingAddress");
+
+  if (latInput) latInput.value = lat.toFixed(6);
+  if (lngInput) lngInput.value = lng.toFixed(6);
+  if (badgeEl) badgeEl.textContent = `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E`;
+
+  const suggestedArea = getNepalgunjAreaHint(lat, lng);
+  if (addrInput) {
+    addrInput.value = `Near ${suggestedArea} (GPS: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E)`;
+  }
+
+  if (bookingMarker) {
+    bookingMarker.setPopupContent(`<b><i class="fa-solid fa-house-user"></i> Patient Home Location</b><br>${suggestedArea}<br><small style="color:#0284c7;">${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E</small>`).openPopup();
+  }
+
+  showToast(`Pinned location: ${suggestedArea}`, "info", 2000);
+}
+
+function jumpToNepalgunjLandmark(lat, lng, landmarkName) {
+  const addrInput = document.getElementById("bookingAddress");
+  if (addrInput) addrInput.value = landmarkName;
+  initOrUpdateBookingMap(lat, lng, landmarkName);
+  showToast(`Map centered to ${landmarkName}`, "info", 1800);
 }
 
 function autoDetectLocation() {
   const addressInput = document.getElementById("bookingAddress");
-  addressInput.value = "Detecting GPS coordinates...";
-  setTimeout(() => {
-    addressInput.value = "Lazimpat, Ward 2, Kathmandu (GPS Verified: 27.7172° N, 85.3240° E)";
-    showToast("Home address GPS location pinned successfully!", "success");
-  }, 600);
+  if (addressInput) addressInput.value = "Detecting GPS coordinates in Banke...";
+  showToast("Locating your GPS coordinates...", "info", 1500);
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const addr = `My GPS Location, Banke (${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E)`;
+        if (addressInput) addressInput.value = addr;
+        initOrUpdateBookingMap(lat, lng, addr);
+        showToast("GPS location verified and pinned!", "success");
+      },
+      (err) => {
+        // Default to Nepalgunj center
+        const lat = 28.0560, lng = 81.6210;
+        const addr = "Dhamboji Chowk, Nepalgunj-2, Banke (GPS: 28.0560° N, 81.6210° E)";
+        if (addressInput) addressInput.value = addr;
+        initOrUpdateBookingMap(lat, lng, addr);
+        showToast("Using Banke Nepalgunj center location.", "info");
+      },
+      { enableHighAccuracy: true, timeout: 6000 }
+    );
+  } else {
+    const lat = 28.0560, lng = 81.6210;
+    const addr = "Dhamboji Chowk, Nepalgunj-2, Banke";
+    if (addressInput) addressInput.value = addr;
+    initOrUpdateBookingMap(lat, lng, addr);
+    showToast("GPS pinned to Dhamboji, Nepalgunj.", "info");
+  }
 }
 
 // File Upload Handler
@@ -225,11 +374,16 @@ async function submitBookingRequest(event) {
     return;
   }
 
+  const latitude = parseFloat(document.getElementById("bookingLatitude")?.value) || 28.0560;
+  const longitude = parseFloat(document.getElementById("bookingLongitude")?.value) || 81.6210;
+
   const payload = {
     service_id: selectedServiceForBooking.id,
     appointment_date: date,
     time_slot: timeSlot,
     address: address,
+    latitude: latitude,
+    longitude: longitude,
     symptoms: symptoms || "Routine home healthcare checkup requested.",
     emergency_contact_name: emergencyName,
     emergency_contact_phone: emergencyPhone,
@@ -257,6 +411,8 @@ async function submitBookingRequest(event) {
       appointment_date: date,
       time_slot: timeSlot,
       address: address,
+      latitude: latitude,
+      longitude: longitude,
       symptoms: symptoms || "Routine home healthcare checkup requested.",
       status: "Pending",
       current_step: 4,
@@ -278,4 +434,56 @@ async function submitBookingRequest(event) {
   } else {
     showToast(data.message || "Failed to submit booking.", "error");
   }
+}
+
+// ==========================================================================
+// Staff, Doctor, Nurse & Admin Location Viewer Modal
+// ==========================================================================
+let patientLocationMap = null;
+let patientLocationMarker = null;
+
+function openPatientLocationModal(lat, lng, patientName, address) {
+  lat = parseFloat(lat) || 28.0560;
+  lng = parseFloat(lng) || 81.6210;
+  patientName = patientName || "Patient";
+  address = address || "Banke, Nepalgunj";
+
+  const nameEl = document.getElementById("locModalPatientName");
+  const addrEl = document.getElementById("locModalAddress");
+  const coordsEl = document.getElementById("locModalCoords");
+  const gmapsLink = document.getElementById("locModalGmapsLink");
+
+  if (nameEl) nameEl.textContent = `Patient: ${patientName}`;
+  if (addrEl) addrEl.textContent = address;
+  if (coordsEl) coordsEl.textContent = `GPS: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (Banke, Nepalgunj)`;
+  if (gmapsLink) {
+    gmapsLink.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  }
+
+  openModal("patientLocationModal");
+
+  setTimeout(() => {
+    if (typeof L === "undefined") return;
+    const container = document.getElementById("patientLocationMap");
+    if (!container) return;
+
+    if (!patientLocationMap) {
+      patientLocationMap = L.map("patientLocationMap", {
+        center: [lat, lng],
+        zoom: 15,
+        scrollWheelZoom: true
+      });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(patientLocationMap);
+      patientLocationMarker = L.marker([lat, lng]).addTo(patientLocationMap);
+    } else {
+      patientLocationMap.setView([lat, lng], 15);
+      if (patientLocationMarker) patientLocationMarker.setLatLng([lat, lng]);
+    }
+    
+    patientLocationMarker.bindPopup(`<b><i class="fa-solid fa-house-medical-circle-check" style="color:#0284c7;"></i> Home Visit Destination</b><br><strong>${patientName}</strong><br>${address}<br><small style="color:#0284c7;">${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E</small>`).openPopup();
+    patientLocationMap.invalidateSize();
+  }, 250);
 }

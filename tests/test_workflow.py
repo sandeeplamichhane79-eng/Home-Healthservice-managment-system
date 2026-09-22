@@ -882,6 +882,43 @@ class HomeHealthcareWorkflowTestCase(unittest.TestCase):
         self.assertGreaterEqual(fb_data_high["professional_rating"], 4.98)
         self.assertEqual(fb_data_high["review_count"], 6)
 
+    def test_banke_nepalgunj_appointment_location_coordinates(self):
+        """Verify appointment booking stores and returns Banke Nepalgunj GPS coordinates."""
+        with app.app_context():
+            init_db(force_reseed=True)
+
+        # Login as patient Ram
+        login = self.client.post("/api/auth/login", json={"email": "ram@demo.com", "password": "ram123"})
+        self.assertTrue(login.get_json()["success"])
+
+        # Book appointment with Banke Nepalgunj coordinates
+        nepalgunj_lat = 28.0560
+        nepalgunj_lng = 81.6210
+        nepalgunj_addr = "Dhamboji Chowk, Nepalgunj-2, Banke"
+
+        book_res = self.client.post("/api/appointments", json={
+            "service_id": 1,
+            "appointment_date": "2026-10-30",
+            "time_slot": "10:00 AM - 11:00 AM",
+            "address": nepalgunj_addr,
+            "latitude": nepalgunj_lat,
+            "longitude": nepalgunj_lng,
+            "symptoms": "Home BP checkup in Nepalgunj"
+        })
+        self.assertEqual(book_res.status_code, 200)
+        book_data = book_res.get_json()
+        self.assertTrue(book_data["success"])
+        app_id = book_data["appointment_id"]
+
+        # Fetch appointment details
+        detail_res = self.client.get(f"/api/appointments/{app_id}")
+        self.assertEqual(detail_res.status_code, 200)
+        appt = detail_res.get_json()["appointment"]
+        self.assertEqual(appt["address"], nepalgunj_addr)
+        self.assertAlmostEqual(appt["latitude"], nepalgunj_lat, places=4)
+        self.assertAlmostEqual(appt["longitude"], nepalgunj_lng, places=4)
+
 if __name__ == "__main__":
     unittest.main()
+
 

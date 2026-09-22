@@ -108,9 +108,16 @@ async function loadProfessionalDashboard() {
           </div>
 
           <div>
-            <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Destination Address</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Destination Address (Banke, Nepalgunj)</div>
             <div style="font-size:0.85rem; color:var(--dark); font-weight:600;"><i class="fa-solid fa-house-medical" style="color:var(--primary);"></i> ${app.address}</div>
-            <div style="font-size:0.75rem; color:var(--secondary); cursor:pointer;" onclick="showToast('Navigating via GPS maps...', 'info')"><i class="fa-solid fa-map-location-dot"></i> Open Route Navigation</div>
+            <div style="display:flex; gap:0.4rem; margin-top:0.35rem; flex-wrap:wrap;">
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${app.latitude || 28.0560},${app.longitude || 81.6210}" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.72rem; padding:0.2rem 0.5rem; text-decoration:none;">
+                <i class="fa-solid fa-diamond-turn-right" style="color:#0284c7;"></i> Google Maps Navigation
+              </a>
+              <button type="button" class="btn btn-sm btn-outline" onclick="openPatientLocationModal(${app.latitude || 28.0560}, ${app.longitude || 81.6210}, '${(app.patient_name || 'Patient').replace(/'/g, "\\'")}', '${(app.address || 'Nepalgunj, Banke').replace(/'/g, "\\'")}')" style="font-size:0.72rem; padding:0.2rem 0.5rem;">
+                <i class="fa-solid fa-map-location-dot" style="color:var(--primary);"></i> View on Map
+              </button>
+            </div>
           </div>
 
           <div>
@@ -338,7 +345,18 @@ async function openStaffResponseModal(appId) {
 
   if (numEl) numEl.textContent = app ? `Appt #${app.appointment_number}` : `Appt #${appId}`;
   if (nameEl) nameEl.textContent = app ? `${app.patient_name || 'Patient'} (${app.patient_phone || ''})` : "Patient";
-  if (addrEl) addrEl.textContent = app ? `Destination: ${app.address}` : "";
+  if (addrEl) {
+    if (app) {
+      const lat = app.latitude || 28.0560;
+      const lng = app.longitude || 81.6210;
+      addrEl.innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--primary);"></i> Destination: ${app.address} 
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" style="color:var(--primary); font-weight:700; margin-left:0.5rem; text-decoration:underline;">
+          <i class="fa-solid fa-diamond-turn-right"></i> Navigate (Google Maps)
+        </a>`;
+    } else {
+      addrEl.innerHTML = "";
+    }
+  }
   if (badgeEl) badgeEl.textContent = app ? app.status : "Assigned";
   if (statusSelect && app) statusSelect.value = app.status || "Assigned";
   if (etaInput) etaInput.value = (app && app.eta) ? app.eta : "";

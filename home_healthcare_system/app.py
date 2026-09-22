@@ -919,6 +919,17 @@ def create_appointment():
     emergency_contact_phone = data.get("emergency_contact_phone", "")
     uploaded_docs = data.get("uploaded_docs", [])
 
+    raw_lat = data.get("latitude")
+    raw_lng = data.get("longitude")
+    try:
+        latitude = float(raw_lat) if raw_lat is not None else 28.0560
+    except (ValueError, TypeError):
+        latitude = 28.0560
+    try:
+        longitude = float(raw_lng) if raw_lng is not None else 81.6210
+    except (ValueError, TypeError):
+        longitude = 81.6210
+
     if not patient_id:
         return jsonify({"success": False, "message": "Access Denied"}), 401
     if not service_id or not appointment_date or not time_slot or not address:
@@ -931,12 +942,12 @@ def create_appointment():
     cursor.execute("""
     INSERT INTO appointments (
         appointment_number, patient_id, service_id, status, current_step,
-        appointment_date, time_slot, address, symptoms,
+        appointment_date, time_slot, address, latitude, longitude, symptoms,
         emergency_contact_name, emergency_contact_phone, uploaded_docs
-    ) VALUES (?, ?, ?, 'Pending', 4, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, 'Pending', 4, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         app_number, patient_id, service_id,
-        appointment_date, time_slot, address, symptoms,
+        appointment_date, time_slot, address, latitude, longitude, symptoms,
         emergency_contact_name, emergency_contact_phone, json.dumps(uploaded_docs)
     ))
     conn.commit()
@@ -969,13 +980,22 @@ def sync_appointments():
         if not row:
             raw_pro_id = it.get("professional_id")
             pro_id = int(raw_pro_id) if raw_pro_id is not None and str(raw_pro_id).isdigit() else None
+            try:
+                sync_lat = float(it.get("latitude") or 28.0560)
+            except (ValueError, TypeError):
+                sync_lat = 28.0560
+            try:
+                sync_lng = float(it.get("longitude") or 81.6210)
+            except (ValueError, TypeError):
+                sync_lng = 81.6210
+
             cursor.execute("""
             INSERT INTO appointments (
                 appointment_number, patient_id, service_id, professional_id, status, current_step,
-                appointment_date, time_slot, address, symptoms,
+                appointment_date, time_slot, address, latitude, longitude, symptoms,
                 emergency_contact_name, emergency_contact_phone, uploaded_docs,
                 staff_response, eta
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 app_num,
                 it.get("patient_id", 1),
@@ -985,7 +1005,9 @@ def sync_appointments():
                 it.get("current_step", 4),
                 it.get("appointment_date", datetime.now().strftime("%Y-%m-%d")),
                 it.get("time_slot", "09:00 AM - 10:00 AM"),
-                it.get("address", "Patient Address"),
+                it.get("address", "Dhamboji Chowk, Nepalgunj-2, Banke"),
+                sync_lat,
+                sync_lng,
                 it.get("symptoms", "Home health checkup"),
                 it.get("emergency_contact_name", ""),
                 it.get("emergency_contact_phone", ""),

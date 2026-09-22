@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/animations.css">
   <link rel="stylesheet" href="/static/css/doctor_animation.css">
+  <!-- Leaflet CSS for Interactive Nepalgunj Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
 <body>
 
@@ -1017,12 +1019,32 @@
 
           <div class="form-group">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-              <label class="form-label" style="margin-bottom:0;">Home Visit Address *</label>
+              <label class="form-label" style="margin-bottom:0;"><i class="fa-solid fa-map-location-dot" style="color:var(--primary);"></i> Home Visit Address (Banke, Nepalgunj) *</label>
               <button type="button" class="btn btn-sm btn-outline" onclick="autoDetectLocation()" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
                 <i class="fa-solid fa-location-crosshairs" style="color:var(--primary);"></i> Auto-Detect GPS
               </button>
             </div>
-            <input type="text" id="bookingAddress" class="form-control" placeholder="Enter complete flat/house number and street" required>
+            <input type="text" id="bookingAddress" class="form-control" placeholder="House/Street, Ward or Landmark in Banke, Nepalgunj" required>
+            <input type="hidden" id="bookingLatitude" value="28.0500">
+            <input type="hidden" id="bookingLongitude" value="81.6167">
+
+            <!-- Interactive Banke Nepalgunj Map Picker -->
+            <div style="margin-top:0.6rem; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; background:#f8fafc; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+              <div style="padding:0.45rem 0.75rem; background:#f1f5f9; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-muted); border-bottom:1px solid var(--border-color); flex-wrap:wrap; gap:0.3rem;">
+                <span><i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> <strong>Click map or drag pin</strong> to pinpoint patient house</span>
+                <span id="bookingCoordsBadge" style="background:#e0f2fe; color:#0369a1; font-weight:700; padding:2px 8px; border-radius:4px; font-family:monospace; font-size:0.75rem;">28.0500° N, 81.6167° E</span>
+              </div>
+              <div style="padding:0.35rem 0.6rem; display:flex; gap:0.35rem; flex-wrap:wrap; background:#ffffff; border-bottom:1px solid #e2e8f0; align-items:center;">
+                <span style="font-size:0.7rem; color:var(--text-muted); font-weight:700;"><i class="fa-solid fa-location-arrow"></i> Nepalgunj Hotspots:</span>
+                <button type="button" class="btn btn-sm btn-outline" onclick="jumpToNepalgunjLandmark(28.0560, 81.6210, 'Dhamboji Chowk, Nepalgunj-2, Banke')" style="font-size:0.68rem; padding:0.15rem 0.45rem;">Dhamboji</button>
+                <button type="button" class="btn btn-sm btn-outline" onclick="jumpToNepalgunjLandmark(28.0435, 81.6150, 'Tribhuvan Chowk, Nepalgunj-1, Banke')" style="font-size:0.68rem; padding:0.15rem 0.45rem;">Tribhuvan Chowk</button>
+                <button type="button" class="btn btn-sm btn-outline" onclick="jumpToNepalgunjLandmark(28.0482, 81.6262, 'BP Chowk, Nepalgunj-4, Banke')" style="font-size:0.68rem; padding:0.15rem 0.45rem;">BP Chowk</button>
+                <button type="button" class="btn btn-sm btn-outline" onclick="jumpToNepalgunjLandmark(28.0400, 81.6230, 'Bageshwori Temple Area, Nepalgunj, Banke')" style="font-size:0.68rem; padding:0.15rem 0.45rem;">Bageshwori</button>
+                <button type="button" class="btn btn-sm btn-outline" onclick="jumpToNepalgunjLandmark(28.0670, 81.6190, 'Karkando, Nepalgunj-18, Banke')" style="font-size:0.68rem; padding:0.15rem 0.45rem;">Karkando</button>
+                <button type="button" class="btn btn-sm btn-outline" onclick="jumpToNepalgunjLandmark(28.1880, 81.7040, 'Kohalpur Chowk, Kohalpur, Banke')" style="font-size:0.68rem; padding:0.15rem 0.45rem;">Kohalpur</button>
+              </div>
+              <div id="bookingMap" style="height:210px; width:100%; z-index:1;"></div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -1491,7 +1513,36 @@
         </form>
       </div>
     </div>
+  <!-- Patient Home Location Map Modal for Staff / Admin / Patient -->
+  <div id="patientLocationModal" class="modal-backdrop">
+    <div class="modal-card" style="max-width:650px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-map-location-dot" style="color:var(--primary);"></i> Patient Home Visit Location (Banke, Nepalgunj)</h3>
+        <button class="modal-close-btn" onclick="closeModal('patientLocationModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:0.75rem 1rem; margin-bottom:0.75rem;">
+          <div style="font-weight:700; color:var(--dark); font-size:1rem;" id="locModalPatientName">Patient Name</div>
+          <div style="font-size:0.85rem; color:var(--text-main); margin-top:0.25rem;">
+            <i class="fa-solid fa-house-chimney" style="color:var(--primary);"></i> <strong id="locModalAddress">Nepalgunj, Banke</strong>
+          </div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem; font-family:monospace;" id="locModalCoords">GPS: 28.0500° N, 81.6167° E</div>
+        </div>
+
+        <div id="patientLocationMap" style="height:320px; width:100%; border-radius:var(--radius-md); border:1px solid var(--border-color); z-index:1; box-shadow:0 1px 3px rgba(0,0,0,0.08);"></div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; flex-wrap:wrap; gap:0.5rem;">
+          <a id="locModalGmapsLink" href="#" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;">
+            <i class="fa-solid fa-diamond-turn-right"></i> Open Turn-by-Turn GPS Navigation (Google Maps)
+          </a>
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('patientLocationModal')">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Leaflet JS for Interactive Nepalgunj Maps -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Medical Background Animation & App Scripts -->
   <script src="/static/js/medical_animation.js"></script>

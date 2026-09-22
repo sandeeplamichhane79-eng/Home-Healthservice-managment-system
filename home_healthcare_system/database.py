@@ -272,7 +272,7 @@ def seed_updated_users_data(conn):
     # 1. Seed Users (Ram, Sandeep, Dr. Binod Thapa, Rama, Chetna)
     users_data = [
         # 1. Patient: Ram
-        ("Ram", "ram@demo.com", secure_password("ram123"), "patient", "+977 9841234567", 48, "Male", "O+", "Lazimpat, Kathmandu", None, None, None, 5.0, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"),
+        ("Ram", "ram@demo.com", secure_password("ram123"), "patient", "+977 9841234567", 48, "Male", "O+", "Dhamboji Chowk, Nepalgunj-2, Banke", None, None, None, 5.0, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"),
         
         # 2. Admin: Sandeep
         ("Sandeep", "sandeep@demo.com", secure_password("admin123"), "admin", "+977 9851098765", 42, "Male", "B+", "Central Command Hospital HQ, Kathmandu", "Chief Hospital Director & System Administrator", "MD, MHA, Health Informatics", 16, 5.0, "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150"),
@@ -368,10 +368,10 @@ def seed_updated_users_data(conn):
     cursor.execute("""
     INSERT INTO appointments (
         appointment_number, patient_id, service_id, professional_id, status, current_step,
-        appointment_date, time_slot, address, symptoms, emergency_contact_name, emergency_contact_phone, uploaded_docs
+        appointment_date, time_slot, address, latitude, longitude, symptoms, emergency_contact_name, emergency_contact_phone, uploaded_docs
     ) VALUES (
         'HH-2026-001', 1, 1, 3, 'Completed', 9,
-        ?, '10:00 AM - 10:45 AM', 'Lazimpat, Kathmandu',
+        ?, '10:00 AM - 10:45 AM', 'Dhamboji Chowk, Nepalgunj-2, Banke', 28.0560, 81.6210,
         'Routine hypertension assessment, intermittent chest tightness, and medication renewal.',
         'Sita Sharma (Spouse)', '+977 9841000000', '["sample_discharge_summary.pdf"]'
     )
@@ -439,10 +439,10 @@ def seed_updated_users_data(conn):
     cursor.execute("""
     INSERT INTO appointments (
         appointment_number, patient_id, service_id, professional_id, status, current_step,
-        appointment_date, time_slot, address, symptoms, emergency_contact_name, emergency_contact_phone, uploaded_docs
+        appointment_date, time_slot, address, latitude, longitude, symptoms, emergency_contact_name, emergency_contact_phone, uploaded_docs
     ) VALUES (
         'HH-2026-002', 1, 2, 4, 'In-Progress', 5,
-        ?, '02:00 PM - 03:00 PM', 'Lazimpat, Kathmandu',
+        ?, '02:00 PM - 03:00 PM', 'BP Chowk, Nepalgunj-4, Banke', 28.0482, 81.6262,
         'Post-operative wound dressing change and sterile IV infusion.',
         'Sita Sharma (Spouse)', '+977 9841000000', '[]'
     )
@@ -452,10 +452,10 @@ def seed_updated_users_data(conn):
     cursor.execute("""
     INSERT INTO appointments (
         appointment_number, patient_id, service_id, professional_id, status, current_step,
-        appointment_date, time_slot, address, symptoms, emergency_contact_name, emergency_contact_phone, uploaded_docs
+        appointment_date, time_slot, address, latitude, longitude, symptoms, emergency_contact_name, emergency_contact_phone, uploaded_docs
     ) VALUES (
         'HH-2026-003', 1, 3, NULL, 'Pending', 4,
-        ?, '11:00 AM - 11:30 AM', 'Lazimpat, Kathmandu',
+        ?, '11:00 AM - 11:30 AM', 'Tribhuvan Chowk, Nepalgunj-1, Banke', 28.0435, 81.6150,
         'Monthly chronic prescription refill and medicine therapy counseling by the Pharmacist.',
         'Sita Sharma (Spouse)', '+977 9841000000', '[]'
     )

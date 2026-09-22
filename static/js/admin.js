@@ -124,6 +124,11 @@ async function loadAdminAppointments() {
           <span style="font-size:0.8rem; max-width:180px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${app.address}">
             <i class="fa-solid fa-location-dot" style="color:var(--danger)"></i> ${app.address}
           </span>
+          <div style="margin-top:2px;">
+            <button type="button" class="btn btn-sm btn-outline" onclick="openPatientLocationModal(${app.latitude || 28.0560}, ${app.longitude || 81.6210}, '${(app.patient_name || 'Patient').replace(/'/g, "\\'")}', '${(app.address || 'Nepalgunj, Banke').replace(/'/g, "\\'")}')" style="font-size:0.68rem; padding:0.1rem 0.35rem;">
+              <i class="fa-solid fa-map-pin" style="color:var(--primary);"></i> Map Pin
+            </button>
+          </div>
         </td>
         <td>${assignedStaff}</td>
         <td><span class="badge ${badgeClass}">${app.status}</span></td>

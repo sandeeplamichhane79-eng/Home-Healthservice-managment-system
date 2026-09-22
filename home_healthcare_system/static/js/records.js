@@ -121,6 +121,11 @@ async function loadPatientAppointmentsHistory() {
             </div>
             <div>
               <strong>Visit Location:</strong> ${app.address}
+              <div style="margin-top:0.25rem;">
+                <button type="button" class="btn btn-sm btn-outline" onclick="openPatientLocationModal(${app.latitude || 28.0560}, ${app.longitude || 81.6210}, '${(app.patient_name || 'Patient').replace(/'/g, "\\'")}', '${(app.address || 'Nepalgunj, Banke').replace(/'/g, "\\'")}')" style="font-size:0.7rem; padding:0.15rem 0.45rem;">
+                  <i class="fa-solid fa-map-location-dot" style="color:var(--primary);"></i> View Pinned Map
+                </button>
+              </div>
             </div>
             <div>
               <strong>Symptoms/Notes:</strong> ${app.symptoms || 'None'}
@@ -335,7 +340,18 @@ async function viewAppointmentFullModal(appId) {
         <div><strong>Patient</strong><br>${app.patient_name || "N/A"}</div>
         <div><strong>Date & Time</strong><br>${app.appointment_date || "N/A"} | ${app.time_slot || "N/A"}</div>
         <div><strong>Healthcare Provider</strong><br>${app.professional_name || "Pending Assignment"}</div>
-        <div><strong>Visit Address</strong><br>${app.address || "N/A"}</div>
+        <div>
+          <strong>Visit Address (Banke, Nepalgunj)</strong><br>
+          ${app.address || "N/A"}<br>
+          <div style="display:flex; gap:0.4rem; margin-top:0.35rem; flex-wrap:wrap;">
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${app.latitude || 28.0560},${app.longitude || 81.6210}" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.72rem; padding:0.15rem 0.45rem; text-decoration:none;">
+              <i class="fa-solid fa-diamond-turn-right" style="color:#0284c7;"></i> GPS Navigation
+            </a>
+            <button type="button" class="btn btn-sm btn-outline" onclick="openPatientLocationModal(${app.latitude || 28.0560}, ${app.longitude || 81.6210}, '${(app.patient_name || 'Patient').replace(/'/g, "\\'")}', '${(app.address || 'Nepalgunj, Banke').replace(/'/g, "\\'")}')" style="font-size:0.72rem; padding:0.15rem 0.45rem;">
+              <i class="fa-solid fa-map-location-dot" style="color:var(--primary);"></i> View on Map
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="card-panel" style="padding:1rem;">
